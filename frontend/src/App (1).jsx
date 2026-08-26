@@ -25,7 +25,7 @@ function App() {
   const showChecklist = () => setScreen('checklist')
 
   if (screen === 'checklist' && selectedScheme) {
-    return <DocumentChecklist scheme={selectedScheme} onBack={() => setScreen('detail')} onHome={showLanding} />
+    return <DocumentChecklist scheme={selectedScheme} onBack={() => setScreen('detail')} />
   }
 
   if (screen === 'detail' && selectedScheme) {
