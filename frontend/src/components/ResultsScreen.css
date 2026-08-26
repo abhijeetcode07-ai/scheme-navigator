@@ -27,9 +27,9 @@
 .edit-answers-link span { margin-right: 7px; color: var(--marigold-deep); font-size: 1.05rem; }
 .results-step { color: var(--muted); font-size: .66rem; font-weight: 800; letter-spacing: .14em; }
 .results-step span { padding: 0 5px; color: var(--marigold-deep); }
-.results-content { display: grid; grid-template-columns: minmax(240px, .75fr) minmax(0, 1.25fr); align-items: start; gap: clamp(40px, 8vw, 100px); width: min(980px, calc(100% - 48px)); margin: 0 auto; padding: 72px 0 110px; }
-.results-heading { position: sticky; top: 32px; }
-.results-heading h1 { margin: 17px 0 21px; color: var(--navy); font: 800 clamp(3.1rem, 6vw, 5.25rem)/.87 var(--display); letter-spacing: -.06em; }
+.results-content { display: grid; grid-template-columns: minmax(240px, .75fr) minmax(0, 1.25fr); align-items: start; gap: clamp(40px, 8vw, 100px); width: min(980px, calc(100% - 48px)); margin: 0 auto; padding: 72px 0 110px; }.results-content > * { min-width: 0; }
+.results-heading { position: sticky; top: 32px; min-width: 0; }
+.results-heading h1 { margin: 17px 0 21px; color: var(--navy); font: 800 clamp(3.1rem, 6vw, 5.25rem)/.92 var(--display); letter-spacing: -.06em; overflow-wrap: anywhere; }
 .results-heading h1 em { color: var(--marigold-deep); font-style: normal; }
 .results-lede { max-width: 320px; margin: 0; color: var(--muted); font-size: .88rem; line-height: 1.6; }
 .ai-status { max-width: 320px; margin-top: 18px; color: var(--muted); font-size: .72rem; line-height: 1.45; }
@@ -50,7 +50,7 @@
 .scheme-row:hover, .scheme-row.is-active, .scheme-row:focus-visible { border-color: var(--marigold); background: var(--card); transform: translateY(-2px); box-shadow: 0 14px 28px rgba(22,35,63,.09); }
 .scheme-row:focus-visible { outline: 3px solid var(--marigold); outline-offset: 3px; }
 .scheme-index { align-self: start; padding-top: 2px; color: var(--marigold-deep); font-size: .68rem; font-weight: 800; letter-spacing: .08em; }
-.scheme-copy { display: grid; gap: 8px; min-width: 0; padding-right: 12px; }.scheme-copy strong { color: var(--navy); font: 800 1.05rem/1.08 var(--display); letter-spacing: -.01em; }.scheme-copy span { color: var(--muted); font-size: .76rem; line-height: 1.45; }
+.scheme-copy { display: grid; gap: 8px; min-width: 0; padding-right: 12px; }.scheme-copy strong { color: var(--navy); font: 800 1.05rem/1.08 var(--display); letter-spacing: -.01em; overflow-wrap: anywhere; }.scheme-copy span { color: var(--muted); font-size: .76rem; line-height: 1.45; overflow-wrap: anywhere; }
 .scheme-chevron { justify-self: end; display: grid; width: 27px; height: 27px; place-items: center; border-radius: 50%; background: var(--teal-soft); color: var(--teal); font-size: 1.02rem; transition: background-color .18s ease, color .18s ease, transform .18s ease; }.scheme-row:hover .scheme-chevron, .scheme-row.is-active .scheme-chevron { background: var(--marigold); color: var(--navy); transform: rotate(4deg); }
 .selection-hint { grid-column: 2; margin: -72px 0 0; color: var(--muted); font-size: .74rem; }.selection-hint strong { color: var(--navy); }
 .empty-state { display: grid; align-content: center; min-height: 270px; padding: 34px; border: 1px dashed var(--line); border-radius: 16px; background: rgba(255,255,255,.56); }.empty-mark { color: var(--marigold-deep); font: 800 2rem var(--display); }.empty-state p { max-width: 250px; margin: 10px 0 22px; color: var(--navy); font: 700 1.14rem/1.2 var(--display); }.empty-edit-link { justify-self: start; font-size: .8rem; }.empty-edit-link span { margin-left: 5px; color: var(--marigold-deep); }

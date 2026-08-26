@@ -1,4 +1,6 @@
 // Generated from SchemesData-MAINDATASHEET.csv. Keep dataset corrections and flags visible in the detail UI.
+import { getLanguage, getOptionLabel } from './languages'
+
 export const schemes = [
   {
     "id": "scheme-1",
@@ -1609,10 +1611,24 @@ export function matchSchemes(answers) {
   return scored
 }
 
+const localizedReasonTemplates = {
+  English: ({ category, education, income }) => `Matches your ${category} category, ${education} study, and ${income} income bracket.`,
+  Hindi: ({ category, education, income }) => `यह आपकी ${category} श्रेणी, ${education} की पढ़ाई और ${income} आय सीमा से मेल खाता है।`,
+  Tamil: ({ category, education, income }) => `இது உங்கள் ${category} பிரிவு, ${education} படிப்பு மற்றும் ${income} வருமான வரம்புடன் பொருந்துகிறது.`,
+  Bengali: ({ category, education, income }) => `এটি আপনার ${category} শ্রেণি, ${education} পড়াশোনা এবং ${income} আয়ের সীমার সঙ্গে মেলে।`,
+  Malayalam: ({ category, education, income }) => `ഇത് നിങ്ങളുടെ ${category} വിഭാഗം, ${education} പഠനം, ${income} വരുമാന പരിധി എന്നിവയുമായി പൊരുത്തപ്പെടുന്നു.`,
+  Punjabi: ({ category, education, income }) => `ਇਹ ਤੁਹਾਡੀ ${category} ਸ਼੍ਰੇਣੀ, ${education} ਦੀ ਪੜ੍ਹਾਈ ਅਤੇ ${income} ਆਮਦਨ ਸੀਮਾ ਨਾਲ ਮੇਲ ਖਾਂਦਾ ਹੈ।`,
+  Marathi: ({ category, education, income }) => `हे तुमची ${category} श्रेणी, ${education} शिक्षण आणि ${income} उत्पन्न मर्यादेशी जुळते.`,
+  Kannada: ({ category, education, income }) => `ಇದು ನಿಮ್ಮ ${category} ವರ್ಗ, ${education} ಅಧ್ಯಯನ ಮತ್ತು ${income} ಆದಾಯ ಮಿತಿಗೆ ಹೊಂದಿಕೆಯಾಗುತ್ತದೆ.`,
+}
+
 export function buildMatchReason(scheme, answers) {
-  const details = []
-  if (answers.category) details.push(`${answers.category} category`)
-  if (answers.education) details.push(`${answers.education.toLowerCase()} study`)
-  if (answers.income) details.push(`the ${answers.income.toLowerCase()} income bracket`)
-  return `${scheme.plainEligibility || 'This scheme matches the details you shared.'} ${details.length ? `It lines up with ${details.join(', ')}.` : ''}`.trim()
+  const selectedLanguage = getLanguage(answers?.language).name
+  const details = {
+    category: getOptionLabel('category', answers?.category || 'General', selectedLanguage),
+    education: getOptionLabel('education', answers?.education || 'Undergraduate', selectedLanguage),
+    income: getOptionLabel('income', answers?.income || 'Below ₹1L', selectedLanguage),
+  }
+  const template = localizedReasonTemplates[selectedLanguage] || localizedReasonTemplates.English
+  return template(details)
 }

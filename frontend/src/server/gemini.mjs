@@ -31,10 +31,10 @@ function buildPrompt(mode, language, answers, schemes, scheme) {
   }
 
   if (mode === 'detail') {
-    return `You are SchemeSetu, a careful plain-language guide to Indian government education and scholarship schemes. Write entirely in ${selectedLanguage}. The deterministic eligibility match has already been made by the app; do not invent new eligibility, benefits, deadlines, documents, or amounts. Use only the supplied record. If the record contains an uncertainty or verification flag, preserve that caution. Return JSON only with exactly these string fields: why, support, beforeApply. Keep each field to 1-3 short sentences.\n\nUser context:\n${JSON.stringify(answerContext)}\n\nScheme record:\n${JSON.stringify(normalizeScheme(scheme))}`
+    return `You are SchemeSetu, a careful plain-language guide to Indian government education and scholarship schemes. Write entirely in ${selectedLanguage}. The deterministic eligibility match has already been made by the app; do not invent new eligibility, benefits, deadlines, documents, or amounts. Use only the supplied record. If the record contains an uncertainty or verification flag, preserve that caution. Translate the scheme name and ministry too. Return JSON only with exactly these fields: name, ministry, why, support, beforeApply, documents. The first five fields must be strings and documents must be an array of short document strings using only the supplied record. Keep each text field to 1-3 short sentences. Do not translate URLs, official abbreviations, currency values, or dates.\n\nUser context:\n${JSON.stringify(answerContext)}\n\nScheme record:\n${JSON.stringify(normalizeScheme(scheme))}`
   }
 
-  return `You are SchemeSetu, a careful plain-language guide to Indian government education and scholarship schemes. Write entirely in ${selectedLanguage}. The app's deterministic matcher is authoritative: do not change the list, add eligibility requirements, or claim that a user is definitely approved. For each supplied scheme, write one short, natural sentence explaining why it may be relevant based only on the supplied eligibility and the user's selected answers. Preserve uncertainty flags when relevant. Return JSON only as an array of objects with exactly these fields: id, reason. Keep each reason under 180 characters.\n\nUser context:\n${JSON.stringify(answerContext)}\n\nMatched scheme records:\n${JSON.stringify(schemes.map(normalizeScheme))}`
+  return `You are SchemeSetu, a careful plain-language guide to Indian government education and scholarship schemes. Write entirely in ${selectedLanguage}. The app's deterministic matcher is authoritative: do not change the list, add eligibility requirements, or claim that a user is definitely approved. For each supplied scheme, translate the scheme name and write one short, natural sentence explaining why it may be relevant based only on the supplied eligibility and the user's selected answers. Preserve official abbreviations in parentheses and uncertainty flags when relevant. Return JSON only as an array of objects with exactly these fields: id, name, reason. Keep each reason under 180 characters.\n\nUser context:\n${JSON.stringify(answerContext)}\n\nMatched scheme records:\n${JSON.stringify(schemes.map(normalizeScheme))}`
 }
 
 function parseJsonText(text) {
@@ -63,17 +63,20 @@ function validateOutput(mode, data, sourceSchemes) {
   if (mode === 'detail') {
     if (!data || typeof data !== 'object' || Array.isArray(data)) return null
     return {
+      name: cleanText(data.name, 260),
+      ministry: cleanText(data.ministry, 500),
       why: cleanText(data.why, 1400),
       support: cleanText(data.support, 1800),
       beforeApply: cleanText(data.beforeApply, 1400),
+      documents: Array.isArray(data.documents) ? data.documents.slice(0, 10).map((item) => cleanText(item, 400)).filter(Boolean) : [],
     }
   }
   if (!Array.isArray(data)) return null
   const validIds = new Set(sourceSchemes.map((scheme) => scheme.id))
   return data
     .filter((item) => item && validIds.has(item.id))
-    .map((item) => ({ id: item.id, reason: cleanText(item.reason, 240) }))
-    .filter((item) => item.reason)
+    .map((item) => ({ id: item.id, name: cleanText(item.name, 260), reason: cleanText(item.reason, 240) }))
+    .filter((item) => item.reason && item.name)
 }
 
 async function callGemini(mode, language, answers, schemes, scheme) {

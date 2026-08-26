@@ -1,13 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import './InputScreen.css'
-import { getLanguage, languages } from '../data/languages'
-
-const introLines = [
-  "Let's find what you qualify for.",
-  'This takes about two minutes.',
-  'Feel free to describe your situation in your own words too.',
-]
+import { getCopy, getLanguage, getOptionLabel, languages } from '../data/languages'
 
 const options = {
   language: languages,
@@ -114,21 +108,22 @@ function TextType({ text, typingSpeed = 45, pauseDuration = 1800, loop = true, s
 }
 
 function optionValue(option) { return typeof option === 'string' ? option : option.name }
-function optionLabel(option) { return typeof option === 'string' ? option : `${option.nativeName} · ${option.name}` }
+function optionLabel(option, language) { return typeof option === 'string' ? getOptionLabel('education', option, language) : `${option.nativeName} · ${option.name}` }
 
-function ChoiceGroup({ label, name, values, value, onChange }) {
+function ChoiceGroup({ label, name, values, value, onChange, language }) {
   return <fieldset className={`choice-group ${name === 'language' ? 'language-choice-group' : ''}`}>
     <legend>{label}</legend>
     <div className="choice-list">
       {values.map((option) => {
         const optionKey = optionValue(option)
-        return <button className={`choice-chip ${value === optionKey ? 'is-selected' : ''}`} type="button" key={optionKey} aria-pressed={value === optionKey} onClick={() => onChange(name, optionKey)}>{optionLabel(option)}</button>
+        const localizedLabel = name === 'education' ? getOptionLabel('education', optionKey, language) : name === 'category' ? getOptionLabel('category', optionKey, language) : name === 'income' ? getOptionLabel('income', optionKey, language) : optionLabel(option, language)
+        return <button className={`choice-chip ${value === optionKey ? 'is-selected' : ''}`} type="button" key={optionKey} aria-pressed={value === optionKey} onClick={() => onChange(name, optionKey)}>{localizedLabel}</button>
       })}
     </div>
   </fieldset>
 }
 
-function VoiceInput({ language, value, onChange }) {
+function VoiceInput({ language, value, onChange, copy }) {
   const recognitionRef = useRef(null)
   const [status, setStatus] = useState('idle')
   const supported = typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)
@@ -159,10 +154,17 @@ function VoiceInput({ language, value, onChange }) {
     try { recognition.start() } catch { setStatus('error') }
   }
 
-  const statusCopy = { idle: supported ? 'Speak instead of typing' : 'Voice input needs a supported browser', listening: 'Listening… speak naturally', unsupported: 'Voice input is not supported in this browser', permission: 'Microphone permission was blocked — allow it in browser settings', 'no-speech': 'No speech heard — try again', error: 'Voice input stopped — try again' }
+  const statusCopy = {
+    idle: supported ? copy.idle : copy.unsupported,
+    listening: copy.listening,
+    unsupported: copy.unsupported,
+    permission: copy.permission,
+    'no-speech': copy.noSpeech,
+    error: copy.error,
+  }
   return <div className="voice-input-wrap">
-    <button className={`voice-button ${status === 'listening' ? 'is-listening' : ''}`} type="button" onClick={toggleListening} aria-label={status === 'listening' ? 'Stop voice input' : 'Start voice input'} aria-pressed={status === 'listening'} title={status === 'listening' ? 'Stop voice input' : 'Start voice input'}>
-      <span className="voice-icon" aria-hidden="true">{status === 'listening' ? '■' : '●'}</span><span>{status === 'listening' ? 'Stop listening' : 'Use your voice'}</span>
+    <button className={`voice-button ${status === 'listening' ? 'is-listening' : ''}`} type="button" onClick={toggleListening} aria-label={status === 'listening' ? copy.stopLabel : copy.startLabel} aria-pressed={status === 'listening'} title={status === 'listening' ? copy.stopLabel : copy.startLabel}>
+      <span className="voice-icon" aria-hidden="true">{status === 'listening' ? '■' : '●'}</span><span>{status === 'listening' ? copy.stop : copy.use}</span>
     </button>
     <span className={`voice-status voice-status-${status}`} role="status" aria-live="polite">{statusCopy[status]}{value ? ` · ${getLanguage(language).speechLocale}` : ''}</span>
   </div>
@@ -172,27 +174,31 @@ function SpecularButton({ children, disabled }) {
   return <button className="input-submit" type="submit" disabled={disabled}><span>{children}</span><span className="input-arrow" aria-hidden="true">↗</span></button>
 }
 
-export default function InputScreen({ onSubmit, onBack }) {
+export default function InputScreen({ onSubmit, onBack, initialLanguage = 'English', onLanguageChange }) {
   const reduceMotion = useReducedMotion()
-  const [answers, setAnswers] = useState({ language: 'English', education: '', category: '', income: '', notes: '' })
+  const [answers, setAnswers] = useState({ language: initialLanguage, education: '', category: '', income: '', notes: '' })
   const [submitted, setSubmitted] = useState(false)
-  const updateAnswer = (name, value) => setAnswers((current) => ({ ...current, [name]: value }))
+  const copy = getCopy(answers.language)
+  const updateAnswer = (name, value) => {
+    setAnswers((current) => ({ ...current, [name]: value }))
+    if (name === 'language') onLanguageChange?.(value)
+  }
   const isReady = Boolean(answers.language && answers.education && answers.category && answers.income)
   const handleSubmit = (event) => { event.preventDefault(); if (!isReady) { setSubmitted(true); return } onSubmit(answers) }
 
   return <main className="input-page">
     <CursorGrid cellSize={90} color="#E8A33D" radius={110} falloff="smooth" holdTime={300} fadeDuration={600} lineWidth={1} maxOpacity={0.35} fillOpacity={0} gridOpacity={0.04} clickPulse={false} />
-    <header className="input-nav"><button className="back-link" type="button" onClick={onBack}><span aria-hidden="true">←</span> SchemeSetu</button><span className="step-count">STEP 01 <span aria-hidden="true">/</span> ABOUT YOU</span></header>
+    <header className="input-nav"><button className="back-link" type="button" onClick={onBack}><span aria-hidden="true">←</span> {copy.input.back}</button><span className="step-count">{copy.input.step}</span></header>
     <motion.div className="input-panel" initial={reduceMotion ? false : { opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .55, ease: [0.23, 1, 0.32, 1] }}>
-      <div className="panel-heading"><div className="heading-copy"><p className="eyebrow">A little context goes a long way</p><h1>Let’s find your fit.</h1></div><TextType text={introLines} typingSpeed={45} pauseDuration={1800} loop showCursor textColors={['#16233F']} /></div>
+      <div className="panel-heading"><div className="heading-copy"><p className="eyebrow">{copy.input.eyebrow}</p><h1>{copy.input.title}</h1></div><TextType text={copy.input.intro} typingSpeed={45} pauseDuration={1800} loop showCursor textColors={['#16233F']} /></div>
       <form onSubmit={handleSubmit}>
-        <ChoiceGroup label="Preferred language" name="language" values={options.language} value={answers.language} onChange={updateAnswer} />
-        <ChoiceGroup label="What are you studying?" name="education" values={options.education} value={answers.education} onChange={updateAnswer} />
-        <ChoiceGroup label="Which category best describes you?" name="category" values={options.category} value={answers.category} onChange={updateAnswer} />
-        <ChoiceGroup label="Approximate annual family income" name="income" values={options.income} value={answers.income} onChange={updateAnswer} />
-        <label className="notes-field" htmlFor="situation-notes"><span>Anything else about your situation? <small>(optional)</small></span><textarea id="situation-notes" value={answers.notes} onChange={(event) => updateAnswer('notes', event.target.value)} placeholder="For example: I am the first person in my family to attend college…" rows="4" /><VoiceInput language={answers.language} value={answers.notes} onChange={(value) => updateAnswer('notes', value)} /></label>
-        {submitted && !isReady && <p className="form-message" role="alert">Choose one option in each section so we can start with a useful match.</p>}
-        <div className="submit-row"><SpecularButton disabled={!isReady}>Find My Schemes</SpecularButton><span className="privacy-note">Your answers stay here for this conversation.</span></div>
+        <ChoiceGroup label={copy.input.language} name="language" values={options.language} value={answers.language} language={answers.language} onChange={updateAnswer} />
+        <ChoiceGroup label={copy.input.education} name="education" values={options.education} value={answers.education} language={answers.language} onChange={updateAnswer} />
+        <ChoiceGroup label={copy.input.category} name="category" values={options.category} value={answers.category} language={answers.language} onChange={updateAnswer} />
+        <ChoiceGroup label={copy.input.income} name="income" values={options.income} value={answers.income} language={answers.language} onChange={updateAnswer} />
+        <label className="notes-field" htmlFor="situation-notes"><span>{copy.input.notes} <small>({copy.input.optional})</small></span><textarea id="situation-notes" value={answers.notes} onChange={(event) => updateAnswer('notes', event.target.value)} placeholder={copy.input.placeholder} rows="4" /><VoiceInput language={answers.language} value={answers.notes} onChange={(value) => updateAnswer('notes', value)} copy={copy.input.voice} /></label>
+        {submitted && !isReady && <p className="form-message" role="alert">{copy.input.incomplete}</p>}
+        <div className="submit-row"><SpecularButton disabled={!isReady}>{copy.input.find}</SpecularButton><span className="privacy-note">{copy.input.privacy}</span></div>
       </form>
     </motion.div>
   </main>

@@ -166,15 +166,18 @@ h1, h2, h3 { font-family: var(--display); }
 
 .closing-section { display: flex; align-items: end; justify-content: space-between; gap: 40px; padding: 95px 0 120px; border-top: 1px solid var(--line); }
 .closing-section h2 { margin-bottom: 0; }
-.closing-action { max-width: 320px; padding-bottom: 7px; }
+.closing-action { max-width: 370px; padding-bottom: 7px; }
 .closing-action p { margin: 0 0 22px; color: var(--muted); font-size: .9rem; line-height: 1.55; }
+.landing-language-picker { display: flex; flex-wrap: wrap; gap: 6px; max-width: 370px; margin: 0 0 24px; }
+.landing-language-picker button { padding: 7px 9px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--navy-soft); font: 700 .7rem var(--body); cursor: pointer; }
+.landing-language-picker button:hover, .landing-language-picker button:focus-visible, .landing-language-picker button.language-active { border-color: var(--marigold); background: var(--teal-soft); color: var(--navy); }
 .text-link { padding: 0 0 5px; border: 0; border-bottom: 2px solid var(--marigold); background: transparent; color: var(--navy); font: 800 .9rem var(--body); cursor: pointer; }
 .text-link span { color: var(--marigold-deep); font-size: 1.15rem; transition: margin .18s ease; }
 .text-link:hover span { margin-left: 5px; }
 .site-footer { display: grid; grid-template-columns: 1fr 1.4fr auto; align-items: center; gap: 28px; padding: 28px max(24px, calc((100% - 1180px) / 2)); background: var(--navy); color: var(--paper); }
 .footer-brand { color: var(--paper); font-size: 1.1rem; }.footer-brand .wordmark-mark { background: var(--marigold); }.footer-year { color: rgba(251,247,239,.6); font: .72rem var(--body); letter-spacing: .04em; }
 .site-footer p { margin: 0; color: rgba(251,247,239,.67); font-size: .7rem; line-height: 1.45; }
-.footer-language { display: flex; gap: 4px; }.footer-language button { padding: 4px 7px; border: 0; background: transparent; color: rgba(251,247,239,.58); font: .68rem var(--body); cursor: pointer; }.footer-language button:hover, .footer-language .language-active { color: var(--marigold); }
+.footer-language { display: flex; flex-wrap: wrap; gap: 4px; }.footer-language button { padding: 4px 7px; border: 0; background: transparent; color: rgba(251,247,239,.58); font: .68rem var(--body); cursor: pointer; }.footer-language button:hover, .footer-language .language-active { color: var(--marigold); }
 
 @keyframes shine { 0%, 100% { background-position: 100% 0; } 50% { background-position: 0 0; } }
 @keyframes loop { to { transform: translateX(-50%); } }

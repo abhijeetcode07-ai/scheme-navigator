@@ -1,26 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import './ResultsScreen.css'
+import { getCopy, interpolate } from '../data/languages'
 import { matchSchemes } from '../data/schemes'
 
 function GlareHover({ children, glareColor = '#E8A33D', glareOpacity = 0.25, glareAngle = -30, transitionDuration = 500 }) {
   return (
     <div
       className="glare-hover"
-      style={{
-        '--glare-color': glareColor,
-        '--glare-opacity': glareOpacity,
-        '--glare-angle': `${glareAngle}deg`,
-        '--glare-duration': `${transitionDuration}ms`,
-      }}
+      style={{ '--glare-color': glareColor, '--glare-opacity': glareOpacity, '--glare-angle': `${glareAngle}deg`, '--glare-duration': `${transitionDuration}ms` }}
     >
       {children}
     </div>
   )
 }
 
-function AnimatedList({ items, showGradients = true, enableArrowNavigation = true, displayScrollbar = true, onItemSelect }) {
-  const listRef = useRef(null)
+function AnimatedList({ items, showGradients = true, enableArrowNavigation = true, displayScrollbar = true, onItemSelect, ariaLabel }) {
   const rowRefs = useRef([])
   const reduceMotion = useReducedMotion()
   const [activeIndex, setActiveIndex] = useState(0)
@@ -28,6 +23,8 @@ function AnimatedList({ items, showGradients = true, enableArrowNavigation = tru
   useEffect(() => {
     rowRefs.current = rowRefs.current.slice(0, items.length)
   }, [items.length])
+
+  const safeActiveIndex = Math.min(activeIndex, Math.max(0, items.length - 1))
 
   const focusRow = (index) => {
     if (!items.length) return
@@ -53,7 +50,7 @@ function AnimatedList({ items, showGradients = true, enableArrowNavigation = tru
   return (
     <div className={`animated-list-shell ${showGradients ? 'has-gradients' : ''} ${displayScrollbar ? 'show-scrollbar' : 'hide-scrollbar'}`}>
       {showGradients && <span className="list-gradient list-gradient-top" aria-hidden="true" />}
-      <div className="animated-list" ref={listRef} role="listbox" aria-label="Matched schemes">
+      <div className="animated-list" role="listbox" aria-label={ariaLabel}>
         {items.map((item, index) => (
           <motion.div
             className="animated-list-item"
@@ -64,20 +61,17 @@ function AnimatedList({ items, showGradients = true, enableArrowNavigation = tru
           >
             <GlareHover glareColor="#E8A33D" glareOpacity={0.25} glareAngle={-30} transitionDuration={500}>
               <button
-                className={`scheme-row ${activeIndex === index ? 'is-active' : ''}`}
+                className={`scheme-row ${safeActiveIndex === index ? 'is-active' : ''}`}
                 type="button"
                 role="option"
-                aria-selected={activeIndex === index}
+                aria-selected={safeActiveIndex === index}
                 ref={(element) => { rowRefs.current[index] = element }}
                 onFocus={() => setActiveIndex(index)}
                 onKeyDown={(event) => handleKeyDown(event, index)}
                 onClick={() => onItemSelect(item)}
               >
-                <span className="scheme-index">0{index + 1}</span>
-                <span className="scheme-copy">
-                  <strong>{item.name}</strong>
-                  <span>{item.reason}</span>
-                </span>
+                <span className="scheme-index">{String(index + 1).padStart(2, '0')}</span>
+                <span className="scheme-copy"><strong>{item.name}</strong><span>{item.reason}</span></span>
                 <span className="scheme-chevron" aria-hidden="true">↗</span>
               </button>
             </GlareHover>
@@ -92,6 +86,8 @@ function AnimatedList({ items, showGradients = true, enableArrowNavigation = tru
 export default function ResultsScreen({ answers, matches, onEdit, onItemSelect, aiStatus }) {
   const items = matches ?? matchSchemes(answers)
   const hasMatches = items.length > 0
+  const language = answers?.language
+  const copy = getCopy(language).results
   const [selectedItem, setSelectedItem] = useState(null)
 
   const selectItem = (item) => {
@@ -102,34 +98,26 @@ export default function ResultsScreen({ answers, matches, onEdit, onItemSelect, 
   return (
     <main className="results-page">
       <header className="results-header">
-        <button className="edit-answers-link" type="button" onClick={onEdit}>
-          <span aria-hidden="true">←</span> Edit my answers
-        </button>
-        <span className="results-step">STEP 02 <span aria-hidden="true">/</span> YOUR MATCHES</span>
+        <button className="edit-answers-link" type="button" onClick={onEdit}><span aria-hidden="true">←</span> {copy.back}</button>
+        <span className="results-step">{copy.step}</span>
       </header>
       <section className="results-content" aria-labelledby="results-title">
         <div className="results-heading">
-          <p className="eyebrow">A clearer next step</p>
-          <h1 id="results-title">Here’s what you<br /><em>may qualify for</em></h1>
-          <p className="results-lede">A shortlist to start with. Open any scheme to see the plain-language why, the documents, and where to apply.</p>
+          <p className="eyebrow">{copy.eyebrow}</p>
+          <h1 id="results-title">{copy.title}<br /><em>{copy.titleEm}</em></h1>
+          <p className="results-lede">{copy.lede}</p>
           {aiStatus && <p className={`ai-status ai-status-${aiStatus.kind}`} role="status" aria-live="polite">{aiStatus.message}</p>}
         </div>
         {hasMatches ? (
-          <AnimatedList
-            items={items}
-            showGradients
-            enableArrowNavigation
-            displayScrollbar
-            onItemSelect={selectItem}
-          />
+          <AnimatedList items={items} showGradients enableArrowNavigation displayScrollbar ariaLabel={copy.matched} onItemSelect={selectItem} />
         ) : (
           <div className="empty-state" role="status">
             <span className="empty-mark" aria-hidden="true">—</span>
-            <p>No exact matches yet — try adjusting your answers</p>
-            <button className="empty-edit-link" type="button" onClick={onEdit}>Edit my answers <span aria-hidden="true">→</span></button>
+            <p>{copy.empty}</p>
+            <button className="empty-edit-link" type="button" onClick={onEdit}>{copy.edit} <span aria-hidden="true">→</span></button>
           </div>
         )}
-        {selectedItem && <p className="selection-hint" role="status">Opening <strong>{selectedItem.name}</strong>…</p>}
+        {selectedItem && <p className="selection-hint" role="status">{interpolate(copy.opening, { name: selectedItem.name })}</p>}
       </section>
     </main>
   )
