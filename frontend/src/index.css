@@ -1,111 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
-
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
+  --navy: #16233F;
+  --navy-soft: #29406B;
+  --marigold: #E8A33D;
+  --marigold-deep: #C4791C;
+  --paper: #FBF7EF;
+  --card: #FFFFFF;
+  --teal: #2F7A6B;
+  --teal-soft: #E7F3F0;
+  --ink: #1C2333;
+  --muted: #6B7280;
+  --line: #E6E0D2;
+  --danger: #A8402F;
+  --display: 'Baloo 2', sans-serif;
+  --body: 'IBM Plex Sans', sans-serif;
+  font-family: var(--body);
+  color: var(--ink);
+  background: var(--paper);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; min-width: 320px; background: var(--paper); }
+button, a { -webkit-tap-highlight-color: transparent; }
+button:focus-visible, a:focus-visible { outline: 3px solid var(--marigold); outline-offset: 3px; }
+#root { min-height: 100svh; }
 
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
-}
-
-body {
-  margin: 0;
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-}
-
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
-}
-
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
-
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
-}
+.input-screen { display: grid; min-height: 100svh; place-items: center; padding: 32px 20px; background: var(--paper); }
+.input-card { width: min(620px, 100%); padding: clamp(32px, 7vw, 72px); border: 1px solid var(--line); border-radius: 24px; background: var(--card); box-shadow: 0 24px 60px rgba(22, 35, 63, .08); }
+.input-card h1 { margin: 18px 0; color: var(--navy); font: 800 clamp(3.2rem, 8vw, 5rem)/.9 var(--display); letter-spacing: -.06em; }
+.input-card h1 em { color: var(--marigold-deep); font-style: normal; }
+.input-lede { max-width: 430px; margin-bottom: 30px; color: var(--muted); line-height: 1.6; }
+.back-link { position: absolute; top: 28px; left: 28px; padding: 8px 0; border: 0; border-bottom: 1px solid var(--marigold); background: transparent; color: var(--navy); font: 700 .86rem var(--body); cursor: pointer; }
+.back-link span { color: var(--marigold-deep); margin-right: 6px; }
+.input-card .specular-button { display: inline-flex; }
