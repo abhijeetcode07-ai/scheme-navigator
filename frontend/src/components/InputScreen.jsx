@@ -15,7 +15,26 @@ const options = {
   income: ['Below ₹1L', '₹1L–₹2.5L', '₹2.5L–₹5L', 'Above ₹5L'],
 }
 
-function CursorGrid() {
+function hexToRgb(hex) {
+  const value = hex.replace('#', '')
+  const normalized = value.length === 3 ? value.split('').map((character) => `${character}${character}`).join('') : value
+  const number = Number.parseInt(normalized, 16)
+  return `${number >> 16}, ${(number >> 8) & 255}, ${number & 255}`
+}
+
+function CursorGrid({
+  cellSize = 90,
+  color = '#E8A33D',
+  radius = 110,
+  falloff = 'smooth',
+  holdTime = 300,
+  fadeDuration = 600,
+  lineWidth = 1,
+  maxOpacity = 0.35,
+  fillOpacity = 0,
+  gridOpacity = 0.04,
+  clickPulse = false,
+}) {
   const canvasRef = useRef(null)
   const pointerRef = useRef({ x: -1000, y: -1000, movedAt: 0 })
   const reduceMotion = useReducedMotion()
@@ -29,9 +48,7 @@ function CursorGrid() {
     let animationFrame
     let width = 0
     let height = 0
-    const cellSize = 90
-    const radius = 110
-    const color = '232, 163, 61'
+    const rgb = hexToRgb(color)
 
     const resize = () => {
       const ratio = Math.min(window.devicePixelRatio || 1, 2)
@@ -48,37 +65,43 @@ function CursorGrid() {
       pointerRef.current = { x: event.clientX, y: event.clientY, movedAt: performance.now() }
     }
 
+    const getInfluence = (distance, now) => {
+      const pointerAge = now - pointerRef.current.movedAt
+      if (reduceMotion || pointerAge >= holdTime + fadeDuration) return 0
+      const distanceInfluence = falloff === 'smooth' ? Math.max(0, 1 - distance / radius) : distance < radius ? 1 : 0
+      const timeInfluence = pointerAge <= holdTime ? 1 : Math.max(0, 1 - (pointerAge - holdTime) / fadeDuration)
+      return distanceInfluence * timeInfluence
+    }
+
     const draw = (now) => {
       context.clearRect(0, 0, width, height)
-      context.lineWidth = 1
+      context.lineWidth = lineWidth
       const pointer = pointerRef.current
-      const isFresh = !reduceMotion && now - pointer.movedAt < 600
 
       for (let x = 0; x <= width + cellSize; x += cellSize) {
-        const distance = Math.abs(x - pointer.x)
-        const influence = isFresh ? Math.max(0, 1 - distance / radius) : 0
-        context.strokeStyle = `rgba(${color}, ${0.04 + influence * 0.12})`
+        const influence = getInfluence(Math.abs(x - pointer.x), now)
+        const opacity = gridOpacity + influence * (maxOpacity - gridOpacity)
+        context.strokeStyle = `rgba(${rgb}, ${opacity})`
         context.beginPath()
         context.moveTo(x, 0)
         context.lineTo(x, height)
         context.stroke()
       }
       for (let y = 0; y <= height + cellSize; y += cellSize) {
-        const distance = Math.abs(y - pointer.y)
-        const influence = isFresh ? Math.max(0, 1 - distance / radius) : 0
-        context.strokeStyle = `rgba(${color}, ${0.04 + influence * 0.12})`
+        const influence = getInfluence(Math.abs(y - pointer.y), now)
+        const opacity = gridOpacity + influence * (maxOpacity - gridOpacity)
+        context.strokeStyle = `rgba(${rgb}, ${opacity})`
         context.beginPath()
         context.moveTo(0, y)
         context.lineTo(width, y)
         context.stroke()
       }
 
-      if (isFresh) {
-        const distance = Math.hypot(pointer.x - Math.round(pointer.x / cellSize) * cellSize, pointer.y - Math.round(pointer.y / cellSize) * cellSize)
-        const glow = Math.max(0, 1 - distance / radius)
+      if (fillOpacity > 0) {
+        const influence = getInfluence(0, now)
         const gradient = context.createRadialGradient(pointer.x, pointer.y, 0, pointer.x, pointer.y, radius)
-        gradient.addColorStop(0, `rgba(${color}, ${glow * 0.14})`)
-        gradient.addColorStop(1, `rgba(${color}, 0)`)
+        gradient.addColorStop(0, `rgba(${rgb}, ${influence * fillOpacity})`)
+        gradient.addColorStop(1, `rgba(${rgb}, 0)`)
         context.fillStyle = gradient
         context.fillRect(pointer.x - radius, pointer.y - radius, radius * 2, radius * 2)
       }
@@ -95,43 +118,66 @@ function CursorGrid() {
       window.removeEventListener('resize', resize)
       window.removeEventListener('pointermove', handlePointerMove)
     }
-  }, [reduceMotion])
+  }, [cellSize, color, fadeDuration, falloff, fillOpacity, gridOpacity, holdTime, lineWidth, maxOpacity, radius, reduceMotion])
 
-  return <canvas ref={canvasRef} className="cursor-grid" aria-hidden="true" />
+  return (
+    <canvas
+      ref={canvasRef}
+      className="cursor-grid"
+      data-cell-size={cellSize}
+      data-click-pulse={clickPulse ? 'true' : 'false'}
+      aria-hidden="true"
+    />
+  )
 }
 
-function TextType() {
+function TextType({ text, typingSpeed = 45, pauseDuration = 1800, loop = true, showCursor = true, textColors = ['#16233F'] }) {
   const reduceMotion = useReducedMotion()
-  const [lineIndex, setLineIndex] = useState(0)
-  const [visibleText, setVisibleText] = useState(reduceMotion ? introLines[0] : '')
+  const [visibleText, setVisibleText] = useState(reduceMotion ? text[0] : '')
 
   useEffect(() => {
     if (reduceMotion) return undefined
 
-    let timeout
+    let cancelled = false
+    let timeoutId
+    let lineIndex = 0
     let characterIndex = 0
-    let currentLine = lineIndex
-    const typeNext = () => {
-      const line = introLines[currentLine]
-      setVisibleText(line.slice(0, characterIndex + 1))
-      characterIndex += 1
-      if (characterIndex < line.length) {
-        timeout = window.setTimeout(typeNext, 45)
-      } else {
-        timeout = window.setTimeout(() => {
-          currentLine = (currentLine + 1) % introLines.length
-          setLineIndex(currentLine)
-        }, 1800)
+
+    const typeLine = () => {
+      if (cancelled) return
+      const line = text[lineIndex]
+      characterIndex = 0
+      setVisibleText('')
+
+      const typeCharacter = () => {
+        if (cancelled) return
+        characterIndex += 1
+        setVisibleText(line.slice(0, characterIndex))
+        if (characterIndex < line.length) {
+          timeoutId = window.setTimeout(typeCharacter, typingSpeed)
+          return
+        }
+        timeoutId = window.setTimeout(() => {
+          if (!loop && lineIndex === text.length - 1) return
+          lineIndex = (lineIndex + 1) % text.length
+          typeLine()
+        }, pauseDuration)
       }
+
+      timeoutId = window.setTimeout(typeCharacter, typingSpeed)
     }
-    typeNext()
-    return () => window.clearTimeout(timeout)
-  }, [lineIndex, reduceMotion])
+
+    typeLine()
+    return () => {
+      cancelled = true
+      window.clearTimeout(timeoutId)
+    }
+  }, [loop, pauseDuration, reduceMotion, text, typingSpeed])
 
   return (
-    <p className="assistant-intro" aria-live="polite">
+    <p className="assistant-intro" aria-live="polite" style={{ color: textColors[0] }}>
       {visibleText}
-      {!reduceMotion && <span className="typing-cursor" aria-hidden="true">|</span>}
+      {showCursor && !reduceMotion && <span className="typing-cursor" aria-hidden="true">|</span>}
     </p>
   )
 }
@@ -157,9 +203,9 @@ function ChoiceGroup({ label, name, values, value, onChange }) {
   )
 }
 
-function SpecularButton({ children, disabled, onClick }) {
+function SpecularButton({ children, disabled }) {
   return (
-    <button className="input-submit" type="submit" disabled={disabled} onClick={onClick}>
+    <button className="input-submit" type="submit" disabled={disabled}>
       <span>{children}</span>
       <span className="input-arrow" aria-hidden="true">↗</span>
     </button>
@@ -206,7 +252,19 @@ export default function InputScreen({ onSubmit, onBack }) {
 
   return (
     <main className="input-page">
-      <CursorGrid />
+      <CursorGrid
+        cellSize={90}
+        color="#E8A33D"
+        radius={110}
+        falloff="smooth"
+        holdTime={300}
+        fadeDuration={600}
+        lineWidth={1}
+        maxOpacity={0.35}
+        fillOpacity={0}
+        gridOpacity={0.04}
+        clickPulse={false}
+      />
       <header className="input-nav">
         <button className="back-link" type="button" onClick={onBack}>
           <span aria-hidden="true">←</span> SchemeSetu
@@ -215,9 +273,11 @@ export default function InputScreen({ onSubmit, onBack }) {
       </header>
       <motion.div className="input-panel" initial={reduceMotion ? false : { opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .55, ease: [0.23, 1, 0.32, 1] }}>
         <div className="panel-heading">
-          <p className="eyebrow">A little context goes a long way</p>
-          <h1>Let’s find your fit.</h1>
-          <TextType />
+          <div className="heading-copy">
+            <p className="eyebrow">A little context goes a long way</p>
+            <h1>Let’s find your fit.</h1>
+          </div>
+          <TextType text={introLines} typingSpeed={45} pauseDuration={1800} loop showCursor textColors={['#16233F']} />
         </div>
         <form onSubmit={handleSubmit}>
           <ChoiceGroup label="Preferred language" name="language" values={options.language} value={answers.language} onChange={updateAnswer} />
