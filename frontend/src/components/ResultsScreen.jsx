@@ -1,42 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import './ResultsScreen.css'
-
-const fallbackMatches = [
-  {
-    id: 'central-sector-scholarship',
-    name: 'Central Sector Scheme of Scholarship',
-    reason: 'May fit students moving into higher education with strong academic performance and family income within the scheme limit.',
-  },
-  {
-    id: 'post-matric-obc',
-    name: 'Post-Matric Scholarship for OBC Students',
-    reason: 'Your OBC category and study level point to a scheme that helps with post-matric education costs.',
-  },
-  {
-    id: 'pm-yasasvi',
-    name: 'PM-YASASVI Scholarship',
-    reason: 'A relevant option to check for OBC, EBC and DNT students continuing school or college studies.',
-  },
-  {
-    id: 'national-scholarship-portal',
-    name: 'National Scholarship Portal opportunities',
-    reason: 'One place to cross-check central and state-linked student support before you apply.',
-  },
-]
-
-function getMatches(answers) {
-  if (!answers) return []
-  const category = answers.category?.toLowerCase()
-  const categoryMatch = category && category !== 'general'
-    ? `${answers.category} category and study level point to support that can help with education costs.`
-    : 'Your study level and income bracket point to support that can help with education costs.'
-
-  return fallbackMatches.map((match, index) => ({
-    ...match,
-    reason: index === 1 && category ? categoryMatch : match.reason,
-  }))
-}
+import { matchSchemes } from '../data/schemes'
 
 function GlareHover({ children, glareColor = '#E8A33D', glareOpacity = 0.25, glareAngle = -30, transitionDuration = 500 }) {
   return (
@@ -125,7 +90,7 @@ function AnimatedList({ items, showGradients = true, enableArrowNavigation = tru
 }
 
 export default function ResultsScreen({ answers, matches, onEdit, onItemSelect }) {
-  const items = matches ?? getMatches(answers)
+  const items = matches ?? matchSchemes(answers)
   const hasMatches = items.length > 0
   const [selectedItem, setSelectedItem] = useState(null)
 
