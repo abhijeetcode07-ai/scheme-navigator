@@ -89,7 +89,7 @@ function isRealLink(link) {
   return typeof link === 'string' && /^https?:\/\//i.test(link.trim())
 }
 
-export default function SchemeDetail({ scheme, onBack, onChecklist }) {
+export default function SchemeDetail({ scheme, aiDetail, aiStatus, onBack, onChecklist }) {
   const reduceMotion = useReducedMotion()
   if (!scheme) return null
   const canApply = isRealLink(scheme.officialApplyLink)
@@ -112,19 +112,21 @@ export default function SchemeDetail({ scheme, onBack, onChecklist }) {
           <MaskedHeading text={scheme.name} tag="h1" mediaType="image" src="/assets/paper-texture.jpg" fillScale={1.2} parallax={20} grayscale reveal="wipe" trigger="view" align="left" weight={700} />
           <p className="detail-ministry">{scheme.ministry}</p>
           <p className="detail-verification">Last verified {scheme.lastVerifiedDate}. Always confirm current eligibility and deadlines on the official portal before applying.</p>
+          {aiStatus && <p className={`detail-ai-status detail-ai-status-${aiStatus.kind}`} role="status" aria-live="polite">{aiStatus.message}</p>}
         </div>
         <div className="detail-sections">
           <DetailCard label="01 / Your fit" title="Why you qualify">
-            <p>{scheme.plainEligibility || scheme.officialEligibility}</p>
+            <p>{aiDetail?.why || scheme.plainEligibility || scheme.officialEligibility}</p>
           </DetailCard>
           <DetailCard label="02 / The support" title="What you get">
-            <p>{scheme.benefits || 'Benefit details are listed in the current official scheme guidance.'}</p>
+            <p>{aiDetail?.support || scheme.benefits || 'Benefit details are listed in the current official scheme guidance.'}</p>
           </DetailCard>
           <DetailCard
             label="03 / Get ready"
             title="Before you apply"
             action={<button className="checklist-inline-link" type="button" onClick={onChecklist}>Open the full document checklist <span aria-hidden="true">→</span></button>}
           >
+            <p className="detail-before-apply">{aiDetail?.beforeApply || 'Use this list as a starting point and confirm the current portal requirements.'}</p>
             <ul className="document-list">
               {(scheme.documents?.length ? scheme.documents.slice(0, 4) : ['Check the current official notice for required documents.']).map((document) => <li key={document}>{document}</li>)}
             </ul>

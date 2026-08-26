@@ -89,7 +89,7 @@ function AnimatedList({ items, showGradients = true, enableArrowNavigation = tru
   )
 }
 
-export default function ResultsScreen({ answers, matches, onEdit, onItemSelect }) {
+export default function ResultsScreen({ answers, matches, onEdit, onItemSelect, aiStatus }) {
   const items = matches ?? matchSchemes(answers)
   const hasMatches = items.length > 0
   const [selectedItem, setSelectedItem] = useState(null)
@@ -112,6 +112,7 @@ export default function ResultsScreen({ answers, matches, onEdit, onItemSelect }
           <p className="eyebrow">A clearer next step</p>
           <h1 id="results-title">Here’s what you<br /><em>may qualify for</em></h1>
           <p className="results-lede">A shortlist to start with. Open any scheme to see the plain-language why, the documents, and where to apply.</p>
+          {aiStatus && <p className={`ai-status ai-status-${aiStatus.kind}`} role="status" aria-live="polite">{aiStatus.message}</p>}
         </div>
         {hasMatches ? (
           <AnimatedList
