@@ -212,27 +212,6 @@ function SpecularButton({ children, disabled }) {
   )
 }
 
-export function ResultsScreen({ answers, onBack, onHome }) {
-  const selections = [answers.language, answers.education, answers.category, answers.income].filter(Boolean)
-  return (
-    <main className="results-screen">
-      <div className="results-card">
-        <p className="eyebrow">Your starting point</p>
-        <h1>We’ll shape the search<br /><em>around you.</em></h1>
-        <p className="results-lede">Your answers are ready for the matching step. We’ll explain why each scheme fits, what to gather, and where to apply.</p>
-        <div className="answer-summary" aria-label="Your selected answers">
-          {selections.map((selection) => <span className="summary-chip" key={selection}>{selection}</span>)}
-        </div>
-        {answers.notes && <p className="notes-preview"><strong>In your words:</strong> {answers.notes}</p>}
-        <div className="results-actions">
-          <button className="input-submit" type="button" onClick={onBack}>Edit answers <span className="input-arrow" aria-hidden="true">↗</span></button>
-          <button className="results-home" type="button" onClick={onHome}>Return home</button>
-        </div>
-      </div>
-    </main>
-  )
-}
-
 export default function InputScreen({ onSubmit, onBack }) {
   const reduceMotion = useReducedMotion()
   const [answers, setAnswers] = useState({ language: 'English', education: '', category: '', income: '', notes: '' })
