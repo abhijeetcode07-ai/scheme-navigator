@@ -1,31 +1,28 @@
 import { useState } from 'react'
 import Landing from './components/Landing'
+import InputScreen, { ResultsScreen } from './components/InputScreen'
 import './App.css'
-
-function InputScreen({ onBack }) {
-  return (
-    <main className="input-screen">
-      <button className="back-link" type="button" onClick={onBack}>
-        <span aria-hidden="true">←</span> Back to SchemeSetu
-      </button>
-      <div className="input-card">
-        <p className="eyebrow">Let’s find your fit</p>
-        <h1>Tell us a little<br /><em>about yourself.</em></h1>
-        <p className="input-lede">This is a placeholder handoff for Page 2. The conversation form can plug in here next.</p>
-        <button className="specular-button" type="button" onClick={onBack}>Return home <span className="button-arrow" aria-hidden="true">↗</span></button>
-      </div>
-    </main>
-  )
-}
 
 function App() {
   const [screen, setScreen] = useState('landing')
+  const [answers, setAnswers] = useState(null)
 
-  return screen === 'landing' ? (
-    <Landing onStart={() => setScreen('input')} />
-  ) : (
-    <InputScreen onBack={() => setScreen('landing')} />
-  )
+  const showInput = () => setScreen('input')
+  const showLanding = () => setScreen('landing')
+  const showResults = (submittedAnswers) => {
+    setAnswers(submittedAnswers)
+    setScreen('results')
+  }
+
+  if (screen === 'results' && answers) {
+    return <ResultsScreen answers={answers} onBack={showInput} onHome={showLanding} />
+  }
+
+  if (screen === 'input') {
+    return <InputScreen onSubmit={showResults} onBack={showLanding} />
+  }
+
+  return <Landing onStart={showInput} />
 }
 
 export default App
