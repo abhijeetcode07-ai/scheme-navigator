@@ -21,7 +21,7 @@ function normalizeScheme(scheme) {
   }
 }
 
-function buildPrompt(mode, language, answers, schemes, scheme) {
+function buildPrompt(mode, language, answers, schemes, scheme, messages = []) {
   const selectedLanguage = cleanText(language, 80) || 'English'
   const answerContext = {
     education: cleanText(answers?.education, 80),
@@ -32,6 +32,11 @@ function buildPrompt(mode, language, answers, schemes, scheme) {
 
   if (mode === 'detail') {
     return `You are SchemeSetu, a careful plain-language guide to Indian government education and scholarship schemes. Write entirely in ${selectedLanguage}. The deterministic eligibility match has already been made by the app; do not invent new eligibility, benefits, deadlines, documents, or amounts. Use only the supplied record. If the record contains an uncertainty or verification flag, preserve that caution. Translate the scheme name and ministry too. Return JSON only with exactly these fields: name, ministry, why, support, beforeApply, documents. The first five fields must be strings and documents must be an array of short document strings using only the supplied record. Keep each text field to 1-3 short sentences. Do not translate URLs, official abbreviations, currency values, or dates.\n\nUser context:\n${JSON.stringify(answerContext)}\n\nScheme record:\n${JSON.stringify(normalizeScheme(scheme))}`
+  }
+
+  if (mode === 'chat') {
+    const history = messages.slice(-10).map((m) => `${m.role === 'user' ? 'User' : 'SetuSathi'}: ${m.content}`).join('\n')
+    return `You are SetuSathi, the conversational AI assistant for SchemeSetu. You help Indian students discover and understand government education and scholarship schemes. Write entirely in ${selectedLanguage}. Be helpful, empathetic, and professional. Use plain language. If the user asks about specific schemes, use the supplied records. If they ask about eligibility, remind them that you are an AI and they must confirm on the official portal. Do not invent scheme details. If you don't know, say so. Return JSON only with exactly one field: content.\n\nUser context:\n${JSON.stringify(answerContext)}\n\nMatched schemes for reference:\n${JSON.stringify(schemes.map(normalizeScheme))}\n\nConversation history:\n${history}`
   }
 
   return `You are SchemeSetu, a careful plain-language guide to Indian government education and scholarship schemes. Write entirely in ${selectedLanguage}. The app's deterministic matcher is authoritative: do not change the list, add eligibility requirements, or claim that a user is definitely approved. For each supplied scheme, translate the scheme name and write one short, natural sentence explaining why it may be relevant based only on the supplied eligibility and the user's selected answers. Preserve official abbreviations in parentheses and uncertainty flags when relevant. Return JSON only as an array of objects with exactly these fields: id, name, reason. Keep each reason under 180 characters.\n\nUser context:\n${JSON.stringify(answerContext)}\n\nMatched scheme records:\n${JSON.stringify(schemes.map(normalizeScheme))}`
@@ -60,6 +65,9 @@ function extractText(payload) {
 }
 
 function validateOutput(mode, data, sourceSchemes) {
+  if (mode === 'chat') {
+    return { content: cleanText(data?.content, 4000) }
+  }
   if (mode === 'detail') {
     if (!data || typeof data !== 'object' || Array.isArray(data)) return null
     return {
@@ -79,11 +87,11 @@ function validateOutput(mode, data, sourceSchemes) {
     .filter((item) => item.reason && item.name)
 }
 
-async function callGemini(mode, language, answers, schemes, scheme) {
+async function callGemini(mode, language, answers, schemes, scheme, messages = []) {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) return jsonResponse(503, { code: 'missing_key', message: 'Gemini is not configured yet, so the verified scheme text is being shown.' })
 
-  const prompt = buildPrompt(mode, language, answers, schemes, scheme)
+  const prompt = buildPrompt(mode, language, answers, schemes, scheme, messages)
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
@@ -100,6 +108,7 @@ async function callGemini(mode, language, answers, schemes, scheme) {
   const sourceSchemes = mode === 'detail' ? [scheme] : schemes
   const validated = validateOutput(mode, parsed, sourceSchemes)
   if (!validated || (mode === 'matches' && validated.length === 0)) return jsonResponse(502, { code: 'invalid_output', message: 'Gemini returned an unusable explanation. The verified scheme text is still available.' })
+  if (mode === 'chat') return jsonResponse(200, { message: validated })
   return jsonResponse(200, mode === 'detail' ? { detail: validated } : { explanations: validated })
 }
 
@@ -107,17 +116,19 @@ export async function handleGeminiRequest({ method, body }) {
   if (method !== 'POST') return jsonResponse(405, { code: 'method_not_allowed', message: 'Only POST is supported.' })
   if (!body || typeof body !== 'object') return jsonResponse(400, { code: 'invalid_request', message: 'The request body must be JSON.' })
 
-  const mode = body.mode === 'detail' ? 'detail' : 'matches'
+  const mode = body.mode === 'chat' ? 'chat' : (body.mode === 'detail' ? 'detail' : 'matches')
   const language = cleanText(body.language, 80)
   const answers = body.answers && typeof body.answers === 'object' ? body.answers : {}
   const schemes = Array.isArray(body.schemes) ? body.schemes.slice(0, MAX_SCHEMES).map(normalizeScheme).filter((scheme) => scheme.id && scheme.name) : []
   const scheme = normalizeScheme(body.scheme)
+  const messages = Array.isArray(body.messages) ? body.messages.slice(-10).map((m) => ({ role: String(m.role), content: cleanText(m.content, 2000) })) : []
 
   if (mode === 'matches' && schemes.length === 0) return jsonResponse(400, { code: 'no_schemes', message: 'No matched schemes were provided.' })
   if (mode === 'detail' && (!scheme.id || !scheme.name)) return jsonResponse(400, { code: 'no_scheme', message: 'No scheme was provided.' })
+  if (mode === 'chat' && messages.length === 0) return jsonResponse(400, { code: 'no_messages', message: 'No messages were provided.' })
 
   try {
-    return await callGemini(mode, language, answers, schemes, scheme)
+    return await callGemini(mode, language, answers, schemes, scheme, messages)
   } catch {
     return jsonResponse(502, { code: 'network_error', message: 'Gemini is temporarily unavailable. The verified scheme text is still available.' })
   }

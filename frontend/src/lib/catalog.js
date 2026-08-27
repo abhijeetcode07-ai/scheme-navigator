@@ -1,5 +1,21 @@
 import { supabase } from './supabase'
 
+async function readJson(response) {
+  const body = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(body.message || 'SchemeSetu data service is unavailable')
+  return body
+}
+
+export async function fetchPublishedSchemes({ languageCode = 'English', page = 0, pageSize = 24 } = {}) {
+  const params = new URLSearchParams({ language: languageCode, page: String(page), pageSize: String(pageSize) })
+  return readJson(await fetch(`/api/schemes?${params.toString()}`, { headers: { Accept: 'application/json' } }))
+}
+
+export async function fetchLatestFeed({ limit = 24 } = {}) {
+  const params = new URLSearchParams({ limit: String(limit) })
+  return readJson(await fetch(`/api/feed?${params.toString()}`, { headers: { Accept: 'application/json' } }))
+}
+
 function requireSupabase() {
   if (!supabase) throw new Error('Supabase is not configured')
   return supabase
