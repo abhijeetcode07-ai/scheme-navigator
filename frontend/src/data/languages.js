@@ -1,12 +1,24 @@
 export const languages = [
   { name: 'English', nativeName: 'English', speechLocale: 'en-IN' },
   { name: 'Hindi', nativeName: 'हिन्दी', speechLocale: 'hi-IN' },
-  { name: 'Tamil', nativeName: 'தமிழ்', speechLocale: 'ta-IN' },
   { name: 'Bengali', nativeName: 'বাংলা', speechLocale: 'bn-IN' },
+  { name: 'Marathi', nativeName: 'मराठी', speechLocale: 'mr-IN' },
+  { name: 'Telugu', nativeName: 'తెలుగు', speechLocale: 'te-IN' },
+  { name: 'Tamil', nativeName: 'தமிழ்', speechLocale: 'ta-IN' },
+  { name: 'Gujarati', nativeName: 'ગુજરાતી', speechLocale: 'gu-IN' },
+  { name: 'Urdu', nativeName: 'اردو', speechLocale: 'ur-IN' },
+  { name: 'Kannada', nativeName: 'ಕನ್ನಡ', speechLocale: 'kn-IN' },
+  { name: 'Odia', nativeName: 'ଓଡ଼ିଆ', speechLocale: 'or-IN' },
   { name: 'Malayalam', nativeName: 'മലയാളം', speechLocale: 'ml-IN' },
   { name: 'Punjabi', nativeName: 'ਪੰਜਾਬੀ', speechLocale: 'pa-IN' },
-  { name: 'Marathi', nativeName: 'मराठी', speechLocale: 'mr-IN' },
-  { name: 'Kannada', nativeName: 'ಕನ್ನಡ', speechLocale: 'kn-IN' },
+  { name: 'Assamese', nativeName: 'অসমীয়া', speechLocale: 'as-IN' },
+  { name: 'Maithili', nativeName: 'मैथिली', speechLocale: 'mai-IN' },
+  { name: 'Sanskrit', nativeName: 'संस्कृतम्', speechLocale: 'sa-IN' },
+  { name: 'Kashmiri', nativeName: 'कॉशुर', speechLocale: 'ks-IN' },
+  { name: 'Nepali', nativeName: 'नेपाली', speechLocale: 'ne-NP' },
+  { name: 'Konkani', nativeName: 'कोंकणी', speechLocale: 'kok-IN' },
+  { name: 'Sindhi', nativeName: 'सिन्धी', speechLocale: 'sd-IN' },
+  { name: 'Manipuri', nativeName: 'মণিপুরী', speechLocale: 'mni-IN' },
 ]
 
 const english = {
@@ -198,7 +210,13 @@ const optionLabels = {
   Kannada: { education: { School: 'ಶಾಲೆ', Undergraduate: 'ಪದವಿ', Postgraduate: 'ಸ್ನಾತಕೋತ್ತರ' }, category: { General: 'ಸಾಮಾನ್ಯ', OBC: 'OBC', SC: 'SC', ST: 'ST', Minority: 'ಅಲ್ಪಸಂಖ್ಯಾತ' }, income: { 'Below ₹1L': '₹1 ಲಕ್ಷಕ್ಕಿಂತ ಕಡಿಮೆ', '₹1L–₹2.5L': '₹1–2.5 ಲಕ್ಷ', '₹2.5L–₹5L': '₹2.5–5 ಲಕ್ಷ', 'Above ₹5L': '₹5 ಲಕ್ಷಕ್ಕಿಂತ ಹೆಚ್ಚು' } },
 }
 
-const localizedCopies = { English: english, Hindi: hindi, Tamil: tamil, Bengali: bengali, Malayalam: malayalam, Punjabi: punjabi, Marathi: marathi, Kannada: kannada }
+const localizedCopies = {
+  English: english, Hindi: hindi, Bengali: bengali, Marathi: marathi,
+  Telugu: english, Tamil: tamil, Gujarati: english, Urdu: english,
+  Kannada: kannada, Odia: english, Malayalam: malayalam, Punjabi: punjabi,
+  Assamese: english, Maithili: english, Sanskrit: english, Kashmiri: english,
+  Nepali: english, Konkani: english, Sindhi: english, Manipuri: english,
+}
 
 export function getLanguage(name) {
   return languages.find((language) => language.name === name) || languages[0]

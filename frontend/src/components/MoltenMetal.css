@@ -1,0 +1,1 @@
+.molten-metal-container { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; pointer-events: none; } .molten-metal-container canvas { opacity: .72; } @media (prefers-reduced-motion: reduce) { .molten-metal-container canvas { opacity: .5; } }

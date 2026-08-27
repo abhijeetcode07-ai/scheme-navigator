@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Landing from './components/Landing'
 import InputScreen from './components/InputScreen'
 import ResultsScreen from './components/ResultsScreen'
@@ -8,6 +8,9 @@ import { matchSchemes } from './data/schemes'
 import { getCopy, getLanguage, interpolate } from './data/languages'
 import { requestDetailExplanation, requestMatchExplanations } from './lib/gemini'
 import './App.css'
+import AuthPanel from './components/AuthPanel'
+import SetuSathi from './components/SetuSathi'
+import { supabase } from './lib/supabase'
 
 function mergeMatchExplanations(items, explanations = []) {
   const explanationById = new Map(explanations.map((item) => [item.id, item]))
@@ -31,10 +34,20 @@ function App() {
   const [selectedScheme, setSelectedScheme] = useState(null)
   const [detailAi, setDetailAi] = useState(null)
   const [aiStatus, setAiStatus] = useState(null)
+  const [user, setUser] = useState(null)
   const matchRequestRef = useRef(0)
   const detailRequestRef = useRef(0)
 
+  useEffect(() => {
+    if (!supabase) return undefined
+    supabase.auth.getSession().then(({ data }) => setUser(data.session?.user || null))
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => setUser(session?.user || null))
+    return () => data.subscription.unsubscribe()
+  }, [])
+
   const updateLanguage = (nextLanguage) => setLanguage(getLanguage(nextLanguage).name)
+  const renderAccountPanel = useCallback(() => <AuthPanel user={user} onAuthChange={setUser} />, [user])
+  const renderSetuSathi = useCallback(() => <SetuSathi language={language} user={user} answers={answers || {}} schemes={matches || []} />, [language, user, answers, matches])
 
   const showInput = () => {
     matchRequestRef.current += 1
@@ -100,11 +113,17 @@ function App() {
     setScreen('checklist')
   }
 
-  if (screen === 'checklist' && selectedScheme) return <DocumentChecklist scheme={selectedScheme} localizedDocuments={detailAi?.documents} language={language} onBack={() => setScreen('detail')} />
-  if (screen === 'detail' && selectedScheme) return <SchemeDetail scheme={selectedScheme} language={language} aiDetail={detailAi} aiStatus={aiStatus} onBack={() => setScreen('results')} onChecklist={showChecklist} />
-  if (screen === 'results') return <ResultsScreen answers={answers} matches={matches} aiStatus={aiStatus} onEdit={showInput} onItemSelect={showDetail} />
-  if (screen === 'input') return <InputScreen initialLanguage={language} onLanguageChange={updateLanguage} onSubmit={showResults} onBack={showLanding} />
-  return <Landing language={language} onLanguageChange={updateLanguage} onStart={showInput} />
+  let content = null
+  if (screen === 'checklist' && selectedScheme) content = <DocumentChecklist scheme={selectedScheme} localizedDocuments={detailAi?.documents} language={language} onBack={() => setScreen('detail')} />
+  else if (screen === 'detail' && selectedScheme) content = <SchemeDetail scheme={selectedScheme} language={language} aiDetail={detailAi} aiStatus={aiStatus} onBack={() => setScreen('results')} onChecklist={showChecklist} />
+  else if (screen === 'results') content = <ResultsScreen answers={answers} matches={matches} aiStatus={aiStatus} onEdit={showInput} onItemSelect={showDetail} />
+  else if (screen === 'input') content = <InputScreen initialLanguage={language} onLanguageChange={updateLanguage} onSubmit={showResults} onBack={showLanding} />
+  else content = <Landing language={language} onLanguageChange={updateLanguage} onStart={showInput} accountPanel={renderAccountPanel()} />
+
+  return <>
+    {content}
+    {renderSetuSathi()}
+  </>
 }
 
 export default App
