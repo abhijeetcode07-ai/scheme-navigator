@@ -1,0 +1,26 @@
+.browse-page { min-height: 100svh; padding: 88px max(20px, 6vw) 80px; background: var(--navy); color: var(--paper); }
+.browse-header { width: min(760px, 100%); margin: 0 auto 42px; text-align: center; }
+.browse-header h1 { margin: 15px 0; color: var(--paper); font: 800 clamp(3rem, 7vw, 6rem)/.88 var(--display); letter-spacing: -.06em; }
+.browse-lede { max-width: 580px; margin: 0 auto; color: rgba(251,247,239,.72); line-height: 1.6; }
+.browse-toolbar { width: min(1180px, 100%); margin: 0 auto 28px; padding: 16px; border: 1px solid rgba(251,247,239,.16); border-radius: 18px; background: rgba(41,64,107,.62); }
+.browse-search input { width: 100%; padding: 14px 16px; border: 1px solid rgba(251,247,239,.2); border-radius: 12px; background: rgba(22,35,63,.75); color: var(--paper); font: 600 .95rem var(--body); }
+.browse-search input::placeholder { color: rgba(251,247,239,.48); }
+.sector-filter { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.sector-filter button { padding: 8px 11px; border: 1px solid rgba(251,247,239,.17); border-radius: 999px; background: transparent; color: rgba(251,247,239,.76); font: 700 .72rem var(--body); cursor: pointer; }
+.sector-filter button:hover, .sector-filter button:focus-visible, .sector-filter button.is-active { border-color: var(--marigold); background: rgba(232,163,61,.16); color: var(--paper); }
+.browse-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; width: min(1180px, 100%); margin: 0 auto; }
+.browse-card { display: flex; min-height: 285px; flex-direction: column; align-items: stretch; padding: 20px; border: 1px solid rgba(251,247,239,.15); border-radius: 16px; background: linear-gradient(145deg, rgba(41,64,107,.78), rgba(22,35,63,.94)); color: var(--paper); text-align: left; cursor: pointer; transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+.browse-card:hover, .browse-card:focus-visible { border-color: var(--marigold); box-shadow: 0 18px 34px rgba(0,0,0,.22); transform: translateY(-3px); }
+.browse-card-top { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 28px; color: var(--marigold); font-size: .62rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.browse-card-top span:last-child { color: var(--teal); }
+.browse-card strong { color: var(--paper); font: 700 1.3rem/1.04 var(--display); }
+.browse-card small { margin-top: 10px; color: rgba(251,247,239,.64); font-size: .72rem; line-height: 1.35; }
+.browse-card p { margin: 16px 0; color: rgba(251,247,239,.7); font-size: .8rem; line-height: 1.5; }
+.browse-open { margin-top: auto; color: var(--marigold); font-size: .76rem; font-weight: 800; }
+.browse-state { width: min(700px, 100%); margin: 28px auto; padding: 32px; border: 1px dashed rgba(251,247,239,.22); border-radius: 16px; color: rgba(251,247,239,.72); text-align: center; }
+.browse-pagination { display: flex; align-items: center; justify-content: center; gap: 18px; width: min(1180px, 100%); margin: 32px auto 0; color: rgba(251,247,239,.72); font-size: .8rem; }
+.browse-pagination button { padding: 9px 13px; border: 1px solid rgba(251,247,239,.18); border-radius: 999px; background: transparent; color: var(--paper); font: 700 .75rem var(--body); cursor: pointer; }
+.browse-pagination button:hover:not(:disabled), .browse-pagination button:focus-visible:not(:disabled) { border-color: var(--marigold); }
+.browse-pagination button:disabled { cursor: not-allowed; opacity: .4; }
+@media (max-width: 900px) { .browse-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .browse-page { padding-inline: 16px; }.browse-grid { grid-template-columns: 1fr; }.browse-card { min-height: 250px; } }

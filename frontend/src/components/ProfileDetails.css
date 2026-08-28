@@ -1,0 +1,17 @@
+.profile-page { min-height: 100svh; padding: 88px max(20px, 6vw) 80px; background: var(--navy); color: var(--paper); }
+.profile-header { width: min(720px, 100%); margin: 0 auto 34px; text-align: center; }
+.profile-header h1 { margin: 14px 0; color: var(--paper); font: 800 clamp(3rem, 7vw, 5.8rem)/.88 var(--display); letter-spacing: -.06em; }
+.profile-header p:last-child { max-width: 580px; margin: 0 auto; color: rgba(251,247,239,.7); line-height: 1.6; }
+.profile-panel { display: grid; gap: 22px; width: min(760px, 100%); margin: 0 auto; padding: clamp(24px, 5vw, 44px); border: 1px solid rgba(251,247,239,.16); border-radius: 22px; background: linear-gradient(145deg, rgba(41,64,107,.96), rgba(22,35,63,.98)); box-shadow: 0 26px 70px rgba(0,0,0,.24); }
+.profile-choice { margin: 0; padding: 0; border: 0; }
+.profile-choice legend, .profile-text-field { display: block; margin-bottom: 9px; color: var(--paper); font-size: .78rem; font-weight: 800; }
+.profile-choice-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.profile-choice-list button { padding: 10px 13px; border: 1px solid rgba(251,247,239,.18); border-radius: 999px; background: rgba(22,35,63,.7); color: rgba(251,247,239,.82); font: 700 .76rem var(--body); cursor: pointer; }
+.profile-choice-list button:hover, .profile-choice-list button:focus-visible, .profile-choice-list button.is-selected { border-color: var(--marigold); background: rgba(232,163,61,.16); color: var(--paper); }
+.profile-text-field select { display: block; width: 100%; margin-top: 9px; padding: 13px; border: 1px solid rgba(251,247,239,.18); border-radius: 10px; background: rgba(22,35,63,.76); color: var(--paper); font: .86rem var(--body); }
+.profile-actions { display: flex; align-items: center; gap: 16px; margin-top: 4px; }
+.profile-submit { padding: 13px 17px; border: 1px solid var(--marigold); border-radius: 10px; background: var(--marigold); color: var(--navy); font: 800 .82rem var(--body); cursor: pointer; }
+.profile-submit:hover:not(:disabled), .profile-submit:focus-visible:not(:disabled) { background: var(--paper); }
+.profile-submit:disabled { cursor: not-allowed; opacity: .42; }
+.profile-actions small { color: rgba(251,247,239,.58); font-size: .7rem; line-height: 1.4; }
+@media (max-width: 600px) { .profile-page { padding-inline: 16px; }.profile-actions { align-items: stretch; flex-direction: column; }.profile-submit { width: 100%; } }
