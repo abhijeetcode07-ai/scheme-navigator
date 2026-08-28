@@ -1,5 +1,5 @@
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash'
-const MAX_SCHEMES = 12
+const MAX_SCHEMES = 24
 const MAX_TEXT = 12000
 
 function jsonResponse(status, body) {
@@ -10,14 +10,14 @@ function cleanText(value, max = MAX_TEXT) {
   return typeof value === 'string' ? value.trim().slice(0, max) : ''
 }
 
-function normalizeScheme(scheme) {
+function normalizeScheme(scheme, compact = false) {
   return {
     id: cleanText(scheme?.id, 80),
     name: cleanText(scheme?.name, 260),
-    plainEligibility: cleanText(scheme?.plainEligibility, 1800),
-    benefits: cleanText(scheme?.benefits, 1800),
-    documents: Array.isArray(scheme?.documents) ? scheme.documents.slice(0, 10).map((item) => cleanText(item, 400)).filter(Boolean) : [],
-    notesFlags: cleanText(scheme?.notesFlags, 1000),
+    plainEligibility: cleanText(scheme?.plainEligibility, compact ? 700 : 1800),
+    benefits: cleanText(scheme?.benefits, compact ? 700 : 1800),
+    documents: Array.isArray(scheme?.documents) ? scheme.documents.slice(0, compact ? 6 : 10).map((item) => cleanText(item, compact ? 220 : 400)).filter(Boolean) : [],
+    notesFlags: cleanText(scheme?.notesFlags, compact ? 500 : 1000),
   }
 }
 
@@ -36,7 +36,7 @@ function buildPrompt(mode, language, answers, schemes, scheme, messages = []) {
 
   if (mode === 'chat') {
     const history = messages.slice(-10).map((m) => `${m.role === 'user' ? 'User' : 'SetuSathi'}: ${m.content}`).join('\n')
-    return `You are SetuSathi, the conversational AI assistant for SchemeSetu. You help Indian students discover and understand government education and scholarship schemes. Write entirely in ${selectedLanguage}. Be helpful, empathetic, and professional. Use plain language. If the user asks about specific schemes, use the supplied records. If they ask about eligibility, remind them that you are an AI and they must confirm on the official portal. Do not invent scheme details. If you don't know, say so. Return JSON only with exactly one field: content.\n\nUser context:\n${JSON.stringify(answerContext)}\n\nMatched schemes for reference:\n${JSON.stringify(schemes.map(normalizeScheme))}\n\nConversation history:\n${history}`
+    return `You are SetuSathi, the conversational AI assistant for SchemeSetu, a generalized Indian government-scheme and citizen-aid finder. You help people understand education, livelihoods, health, housing, finance, insurance, social protection, disability, women-and-child support, agriculture, skills, and other public schemes. Write entirely in ${selectedLanguage}. Be helpful, empathetic, concise, and professional. Use the supplied published records as the only factual scheme source. Never invent eligibility, amounts, deadlines, documents, or application routes. If the requested scheme or fact is not in the supplied records, say that you do not have a verified answer and direct the user to the linked official portal or to Browse Schemes. For eligibility questions, explain that matching is indicative and the official authority makes the final decision. Preserve uncertainty and current-cycle caveats. Return JSON only with exactly one field: content.\n\nUser context:\n${JSON.stringify(answerContext)}\n\nPublished scheme records for reference:\n${JSON.stringify(schemes.map((item) => normalizeScheme(item, true)))}\n\nConversation history:\n${history}`
   }
 
   return `You are SchemeSetu, a careful plain-language guide to Indian government education and scholarship schemes. Write entirely in ${selectedLanguage}. The app's deterministic matcher is authoritative: do not change the list, add eligibility requirements, or claim that a user is definitely approved. For each supplied scheme, translate the scheme name and write one short, natural sentence explaining why it may be relevant based only on the supplied eligibility and the user's selected answers. Preserve official abbreviations in parentheses and uncertainty flags when relevant. Return JSON only as an array of objects with exactly these fields: id, name, reason. Keep each reason under 180 characters.\n\nUser context:\n${JSON.stringify(answerContext)}\n\nMatched scheme records:\n${JSON.stringify(schemes.map(normalizeScheme))}`

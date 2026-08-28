@@ -4,11 +4,22 @@ import { supabaseConfigured } from '../lib/supabase'
 import { getLanguage } from '../data/languages'
 import './SetuSathi.css'
 
+function toAssistantScheme(scheme) {
+  return {
+    id: scheme?.id || scheme?.slug,
+    name: scheme?.displayName || scheme?.name,
+    plainEligibility: scheme?.displayEligibility || scheme?.plainEligibility || scheme?.eligibility_plain,
+    benefits: scheme?.displayBenefits || scheme?.benefits,
+    documents: scheme?.displayDocuments || scheme?.documents || scheme?.documents_required,
+    notesFlags: scheme?.notesFlags || scheme?.notes_flags,
+  }
+}
+
 async function askSetuSathi({ language, answers, schemes, messages }) {
   const response = await fetch('/api/gemini', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ mode: 'chat', language, answers, schemes, messages }),
+    body: JSON.stringify({ mode: 'chat', language, answers, schemes: schemes.map(toAssistantScheme).filter((scheme) => scheme.id && scheme.name), messages }),
   })
   const body = await response.json().catch(() => ({}))
   if (!response.ok) throw new Error(body.message || 'SetuSathi is unavailable right now.')

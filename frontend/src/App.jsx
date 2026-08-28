@@ -10,7 +10,11 @@ import { requestDetailExplanation, requestMatchExplanations } from './lib/gemini
 import './App.css'
 import AuthPanel from './components/AuthPanel'
 import SetuSathi from './components/SetuSathi'
+import BrowseSchemes from './components/BrowseSchemes'
+import LatestUpdates from './components/LatestUpdates'
+import ProfileDetails from './components/ProfileDetails'
 import { supabase } from './lib/supabase'
+import { fetchPublishedSchemes } from './lib/catalog'
 
 function mergeMatchExplanations(items, explanations = []) {
   const explanationById = new Map(explanations.map((item) => [item.id, item]))
@@ -31,6 +35,7 @@ function App() {
   const [language, setLanguage] = useState('English')
   const [answers, setAnswers] = useState(null)
   const [matches, setMatches] = useState(null)
+  const [catalogSchemes, setCatalogSchemes] = useState([])
   const [selectedScheme, setSelectedScheme] = useState(null)
   const [detailAi, setDetailAi] = useState(null)
   const [aiStatus, setAiStatus] = useState(null)
@@ -47,7 +52,34 @@ function App() {
 
   const updateLanguage = (nextLanguage) => setLanguage(getLanguage(nextLanguage).name)
   const renderAccountPanel = useCallback(() => <AuthPanel user={user} onAuthChange={setUser} />, [user])
-  const renderSetuSathi = useCallback(() => <SetuSathi language={language} user={user} answers={answers || {}} schemes={matches || []} />, [language, user, answers, matches])
+  const renderSetuSathi = useCallback(() => <SetuSathi language={language} user={user} answers={answers || {}} schemes={catalogSchemes.length ? catalogSchemes : (matches || [])} />, [language, user, answers, matches, catalogSchemes])
+
+  useEffect(() => {
+    let active = true
+    fetchPublishedSchemes({ languageCode: getLanguage(language).name, page: 0, pageSize: 100 })
+      .then((payload) => {
+        if (active) setCatalogSchemes(Array.isArray(payload?.data) ? payload.data : [])
+      })
+      .catch(() => {
+        if (active) setCatalogSchemes([])
+      })
+    return () => { active = false }
+  }, [language])
+
+  const showProfile = (draftAnswers) => {
+    setAnswers(draftAnswers)
+    setScreen('profile')
+  }
+
+  const showBrowse = () => {
+    detailRequestRef.current += 1
+    setScreen('browse')
+  }
+
+  const showLatest = () => {
+    detailRequestRef.current += 1
+    setScreen('updates')
+  }
 
   const showInput = () => {
     matchRequestRef.current += 1
@@ -114,16 +146,19 @@ function App() {
   }
 
   let content = null
-  if (screen === 'checklist' && selectedScheme) content = <DocumentChecklist scheme={selectedScheme} localizedDocuments={detailAi?.documents} language={language} onBack={() => setScreen('detail')} />
+  if (screen === 'updates') content = <LatestUpdates language={language} onBack={showLanding} />
+  else if (screen === 'profile') content = <ProfileDetails initialAnswers={answers || {}} onBack={showInput} onSubmit={showResults} />
+  else if (screen === 'browse') content = <BrowseSchemes language={language} onBack={showLanding} onSelect={showDetail} />
+  else if (screen === 'checklist' && selectedScheme) content = <DocumentChecklist scheme={selectedScheme} localizedDocuments={detailAi?.documents} language={language} onBack={() => setScreen('detail')} />
   else if (screen === 'detail' && selectedScheme) content = <SchemeDetail scheme={selectedScheme} language={language} aiDetail={detailAi} aiStatus={aiStatus} onBack={() => setScreen('results')} onChecklist={showChecklist} />
   else if (screen === 'results') content = <ResultsScreen answers={answers} matches={matches} aiStatus={aiStatus} onEdit={showInput} onItemSelect={showDetail} />
-  else if (screen === 'input') content = <InputScreen initialLanguage={language} onLanguageChange={updateLanguage} onSubmit={showResults} onBack={showLanding} />
-  else content = <Landing language={language} onLanguageChange={updateLanguage} onStart={showInput} accountPanel={renderAccountPanel()} />
+  else if (screen === 'input') content = <InputScreen initialLanguage={language} onLanguageChange={updateLanguage} onSubmit={showProfile} onBack={showLanding} />
+  else content = <Landing language={language} onLanguageChange={updateLanguage} onStart={showInput} onBrowse={showBrowse} onLatest={showLatest} accountPanel={renderAccountPanel()} />
 
-  return <>
+  return <div className="app-shell theme-dark">
     {content}
     {renderSetuSathi()}
-  </>
+  </div>
 }
 
 export default App
