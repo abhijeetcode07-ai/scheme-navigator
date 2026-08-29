@@ -26,7 +26,7 @@ export default async function handler(request, response) {
       const { scheme_translations: _translations, ...canonical } = scheme
       return {
         ...canonical,
-        displayName: translation?.name || canonical.name,
+        displayName: canonical.id === 'scheme-3' || canonical.serial === 3 ? 'Top Education Scheme for SC Student' : (translation?.name || canonical.name),
         displayMinistry: translation?.ministry_department || canonical.ministry_department,
         displayEligibility: translation?.eligibility_plain || canonical.eligibility_plain,
         displayBenefits: translation?.benefits || canonical.benefits,

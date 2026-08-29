@@ -76,7 +76,7 @@ export const schemes = [
   {
     "id": "scheme-3",
     "serial": 3,
-    "name": "The Top Education Scheme for SC Student",
+    "name": "Top Education Scheme for SC Student",
     "ministry": "Ministry of Social Justice and Empowerment, Department of Social Justice and Empowermen",
     "categories": [
       "SC"

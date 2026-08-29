@@ -1,24 +1,11 @@
 export const languages = [
   { name: 'English', nativeName: 'English', speechLocale: 'en-IN' },
   { name: 'Hindi', nativeName: 'हिन्दी', speechLocale: 'hi-IN' },
-  { name: 'Bengali', nativeName: 'বাংলা', speechLocale: 'bn-IN' },
   { name: 'Marathi', nativeName: 'मराठी', speechLocale: 'mr-IN' },
-  { name: 'Telugu', nativeName: 'తెలుగు', speechLocale: 'te-IN' },
   { name: 'Tamil', nativeName: 'தமிழ்', speechLocale: 'ta-IN' },
-  { name: 'Gujarati', nativeName: 'ગુજરાતી', speechLocale: 'gu-IN' },
-  { name: 'Urdu', nativeName: 'اردو', speechLocale: 'ur-IN' },
   { name: 'Kannada', nativeName: 'ಕನ್ನಡ', speechLocale: 'kn-IN' },
-  { name: 'Odia', nativeName: 'ଓଡ଼ିଆ', speechLocale: 'or-IN' },
   { name: 'Malayalam', nativeName: 'മലയാളം', speechLocale: 'ml-IN' },
-  { name: 'Punjabi', nativeName: 'ਪੰਜਾਬੀ', speechLocale: 'pa-IN' },
-  { name: 'Assamese', nativeName: 'অসমীয়া', speechLocale: 'as-IN' },
-  { name: 'Maithili', nativeName: 'मैथिली', speechLocale: 'mai-IN' },
-  { name: 'Sanskrit', nativeName: 'संस्कृतम्', speechLocale: 'sa-IN' },
-  { name: 'Kashmiri', nativeName: 'कॉशुर', speechLocale: 'ks-IN' },
-  { name: 'Nepali', nativeName: 'नेपाली', speechLocale: 'ne-NP' },
-  { name: 'Konkani', nativeName: 'कोंकणी', speechLocale: 'kok-IN' },
-  { name: 'Sindhi', nativeName: 'सिन्धी', speechLocale: 'sd-IN' },
-  { name: 'Manipuri', nativeName: 'মণিপুরী', speechLocale: 'mni-IN' },
+  { name: 'Bengali', nativeName: 'বাংলা', speechLocale: 'bn-IN' },
 ]
 
 const english = {
