@@ -1,55 +1,48 @@
+// Style direction: Civic Observatory — dark civic editorialism, graphite layers, signal amber, useful motion only.
 import { useState } from 'react'
-import { motion, useReducedMotion } from 'motion/react'
-import './Landing.css'
 import { getCopy, getLanguage, languages } from '../data/languages'
 import MoltenMetal from './MoltenMetal'
 import LatestFeed from './LatestFeed'
+import './Landing.css'
 
-function BubbleMenu({ copy, accountPanel }) {
+const categories = [
+  { label: 'Education & scholarships', icon: 'ED', color: 'amber', stat: '43 schemes', note: 'Students, learners, first-generation applicants' },
+  { label: 'Health & wellbeing', icon: 'HL', color: 'blue', stat: 'Coming next', note: 'Care, insurance, treatment support' },
+  { label: 'Financial assistance', icon: '₹', color: 'teal', stat: 'Coming next', note: 'Income support, pensions, direct benefits' },
+  { label: 'Agriculture & rural', icon: 'AG', color: 'plum', stat: 'Coming next', note: 'Farmers, livelihoods, rural households' },
+]
+
+function Mark() { return <span className="brand-mark" aria-hidden="true"><span /></span> }
+function MaskedHeading({ children }) { return <span className="masked-heading">{children.split('\n').map((line, index) => <span className="heading-line" key={line} style={{ animationDelay: `${index * 90}ms` }}>{line}</span>)}</span> }
+function isHindi(language) { return getLanguage(language).name === 'Hindi' }
+
+function LanguageMenu({ language, onLanguageChange }) {
   const [open, setOpen] = useState(false)
-  const items = [[copy.nav.home, '#top'], [copy.nav.howItWorks, '#how-it-works'], [copy.nav.schemes, '#schemes'], [copy.nav.language, '#language']]
-  return <header className="site-nav" aria-label={copy.nav.home}>
-    <a className="wordmark" href="#top" aria-label={`${copy.nav.home} — SchemeSetu`}><span className="wordmark-mark" aria-hidden="true">S</span>SchemeSetu</a>
-    <button className="menu-toggle" type="button" aria-expanded={open} aria-controls="main-menu" aria-label={open ? 'Close navigation menu' : 'Open navigation menu'} onClick={() => setOpen((current) => !current)}><span /><span /></button>
-    <nav id="main-menu" className={`bubble-menu ${open ? 'is-open' : ''}`}>{items.map(([label, href], index) => <a key={label} className={`bubble-link bubble-link-${index + 1}`} href={href} onClick={() => setOpen(false)}>{label}</a>)}{accountPanel}</nav>
-  </header>
+  const current = getLanguage(language)
+  return <div className="language-menu"><button className="language-trigger" type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open}><span aria-hidden="true">◎</span><span>{current.name === 'English' ? 'EN' : current.name.slice(0, 2).toUpperCase()}</span><span aria-hidden="true">⌄</span></button>{open && <div className="language-popover">{languages.map((item) => <button type="button" key={item.name} className={`language-option ${current.name === item.name ? 'selected' : ''}`} onClick={() => { onLanguageChange?.(item.name); setOpen(false) }}><span>{item.nativeName}</span><small>{item.name}</small>{current.name === item.name && <span aria-hidden="true">✓</span>}</button>)}</div>}</div>
 }
 
-function ParticleText({ children }) {
-  const words = children.split(' ')
-  return <span className="particle-text" aria-label={children}>{words.map((word, index) => <span className={index === 2 || index === 4 ? 'particle-word highlight-word' : 'particle-word'} key={`${word}-${index}`}>{word}{index < words.length - 1 ? ' ' : ''}</span>)}</span>
+function CategoryCard({ category, index, onStart, language }) {
+  const label = isHindi(language) && index === 0 ? 'शिक्षा और छात्रवृत्ति' : category.label
+  return <button type="button" className={`category-card category-${category.color} ${index === 0 ? 'featured' : ''}`} onClick={onStart}><span className="category-icon">{category.icon}</span><span className="category-body"><small>0{index + 1} / SECTOR</small><strong>{label}</strong><em>{category.note}</em></span><span className="category-meta"><b>{category.stat}</b><span aria-hidden="true">↗</span></span></button>
 }
 
-function ShinyText({ children }) { return <span className="shiny-text">{children}</span> }
-function SpecularButton({ children, onClick }) { return <button className="specular-button" type="button" onClick={onClick}><span>{children}</span><span className="button-arrow" aria-hidden="true">↗</span></button> }
-
-function LogoLoop({ labels }) {
-  return <div className="logo-loop" aria-label="Scheme categories we cover"><div className="logo-loop-track">{[...labels, ...labels].map((label, index) => <span className="category-chip" key={`${label}-${index}`}><span className="chip-dot" aria-hidden="true" />{label}</span>)}</div></div>
-}
-
-function MagicBento({ features }) {
-  return <div className="feature-grid">{features.map(([title, description], index) => <article className="feature-card" key={`${title}-${index}`}><div className="feature-card-top"><span className="feature-number">0{index + 1}</span><span className="feature-spark" aria-hidden="true">✦</span></div><h3>{title}</h3><p>{description}</p></article>)}</div>
-}
-
-function ScrollExpand({ copy }) {
-  return <section className="how-section" id="how-it-works" aria-labelledby="how-title"><div className="how-copy"><p className="eyebrow">{copy.simpleFlow}</p><h2 id="how-title">{copy.simpleFlow}</h2><p className="scroll-hint">{copy.scrollFlow} <span aria-hidden="true">↓</span></p></div><div className="flow-card"><div className="flow-art" aria-hidden="true"><div className="flow-sun" /><div className="flow-line flow-line-a" /><div className="flow-line flow-line-b" /><div className="flow-line flow-line-c" /></div><ol className="flow-list">{copy.flow.map((item, index) => <li key={item}><span>{index + 1}</span>{item}</li>)}</ol></div></section>
-}
-
-export default function Landing({ onStart, language = 'English', onLanguageChange, accountPanel }) {
-  const reduceMotion = useReducedMotion()
+export default function Landing({ onStart, language = 'English', onLanguageChange, accountPanel, onBrowse, onLatest }) {
   const copy = getCopy(language)
-  const landing = copy.landing
-  const revealProps = reduceMotion ? {} : { initial: { opacity: 0, y: 18 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.65, ease: [0.23, 1, 0.32, 1] } }
+  const t = copy.landing
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const current = getLanguage(language)
+  const start = () => { setMobileOpen(false); onStart?.() }
+  const nav = <><a href="#discover" onClick={() => setMobileOpen(false)}>{t.nav?.discover || 'Find support'}</a><button type="button" onClick={() => { setMobileOpen(false); onBrowse?.() }}>{t.nav?.schemes || 'Explore schemes'}</button><button type="button" onClick={() => { setMobileOpen(false); onLatest?.() }}>{t.nav?.updates || 'Latest updates'}</button></>
   return <div className="landing-page" id="top">
-    <BubbleMenu copy={copy} accountPanel={accountPanel} />
+    <header className="site-nav"><a href="#top" className="wordmark" aria-label="SchemeSetu home"><Mark /><span>Scheme<span className="wordmark-accent">Setu</span></span></a><nav className="desktop-nav" aria-label="Primary navigation">{nav}</nav><div className="topbar-actions"><LanguageMenu language={current.name} onLanguageChange={onLanguageChange} />{accountPanel}<button type="button" className="mobile-menu" aria-label={mobileOpen ? 'Close navigation' : 'Open navigation'} onClick={() => setMobileOpen((value) => !value)}>{mobileOpen ? <span aria-hidden="true">×</span> : <span aria-hidden="true">≡</span>}</button></div>{mobileOpen && <nav className="mobile-nav" aria-label="Mobile navigation">{nav}</nav>}</header>
     <main>
-      <section className="hero-section" aria-labelledby="hero-title"><MoltenMetal color1="#16233F" color2="#E8A33D" color3="#FBF7EF" speed={reduceMotion ? 0 : 0.22} scale={4} detail={3} glow={1.35} coreSize={0.1} swirl={1} fold={-0.2} blackPoint={0.05} brightness={1.18} colorMode="molten" grain={!reduceMotion} grainIntensity={0.035} mouseInteraction={!reduceMotion} mouseStrength={0.22} opacity={0.62} /><div className="hero-content"><motion.p className="eyebrow hero-eyebrow" {...revealProps}>{landing.eyebrow}</motion.p><motion.h1 id="hero-title" {...revealProps} transition={{ ...revealProps.transition, delay: 0.08 }}><ParticleText>{landing.title}</ParticleText></motion.h1><motion.p className="hero-subtitle" {...revealProps} transition={{ ...revealProps.transition, delay: 0.15 }}><ShinyText>{landing.subtitle}</ShinyText></motion.p><motion.div className="hero-actions" {...revealProps} transition={{ ...revealProps.transition, delay: 0.22 }}><SpecularButton onClick={onStart}>{landing.start}</SpecularButton><span className="hero-note">{landing.note}</span></motion.div><p className="disclaimer">{landing.disclaimer}</p></div><div className="hero-stamp" aria-hidden="true"><span>{landing.madeFor}</span><strong>{landing.students}<br />{landing.inIndia}</strong><span className="stamp-star">✳</span></div></section>
-      <section className="category-section" id="schemes" aria-labelledby="category-title"><div className="section-label-row"><p className="eyebrow" id="category-title">{landing.onePlace}</p><p className="section-aside">{landing.coverage}</p></div><LogoLoop labels={landing.categories} /></section>
+      <section className="hero-section" id="discover"><div className="hero-atmosphere" aria-hidden="true"><MoltenMetal color1="#0F1724" color2="#E0A83E" color3="#0B1019" speed={0.18} scale={4} detail={3} glow={1.1} coreSize={0.1} swirl={1} fold={-0.2} blackPoint={0.05} brightness={1.05} colorMode="molten" grain intensity={0.035} mouseInteraction mouseStrength={0.18} opacity={0.52} /><div className="particle-constellation">{Array.from({ length: 22 }, (_, index) => <i key={index} style={{ '--i': index }} />)}</div></div><div className="hero-copy"><div className="eyebrow"><span className="signal-dot" />{t.eyebrow || 'A clearer civic signal'}<span className="eyebrow-rule" /></div><h1><MaskedHeading>{isHindi(language) ? 'अपनी ज़रूरत से शुरू करें।\nहम रास्ता आसान करेंगे।' : 'Start with what you need.\nWe’ll narrow the path.'}</MaskedHeading></h1><p className="hero-body">{isHindi(language) ? 'बताइए कि आप किस तरह की सहायता ढूँढ रहे हैं। स्कीम सेतु आपकी स्थिति के अनुसार सरकारी योजनाएँ दिखाता है और अगला कदम समझाता है।' : 'Tell us what kind of support you’re looking for. Scheme Setu matches your situation with relevant government schemes — then explains what to do next.'}</p><div className="hero-actions"><button type="button" className="primary-button" onClick={start}>{t.start || 'Find my schemes'} <span aria-hidden="true">↗</span></button><a className="quiet-link" href="#how-it-works">{t.howItWorks || 'See how it works'} <span>↘</span></a></div><p className="hero-disclaimer">No sign-up required to begin <span>·</span> {t.disclaimer || 'Always confirm details on the official government portal before applying.'}</p></div><div className="hero-dashboard" aria-label="SchemeSetu overview panel"><div className="dashboard-topline"><span>SETU / SIGNAL BOARD</span><span className="live-indicator"><i />LIVE CATALOGUE</span></div><div className="dashboard-title"><span>PUBLIC SUPPORT<br /><strong>AT A GLANCE</strong></span><span className="dashboard-index">01<span>/04</span></span></div><div className="coverage-visual"><div className="coverage-ring"><div className="coverage-ring-inner"><strong>43</strong><small>verified<br />schemes</small></div></div><div className="coverage-legend"><div><i className="legend-dot amber" /><span>Education</span><b>43</b></div><div><i className="legend-dot muted" /><span>Other sectors</span><b>Next</b></div><div><i className="legend-dot line" /><span>Official source</span><b>100%</b></div></div></div><div className="dashboard-foot"><span>Last catalogue review</span><b>2026 / Q1</b><span className="foot-arrow">↗</span></div></div></section>
+      <section className="category-section section-frame" id="coverage"><div className="section-header"><div><p className="eyebrow">{t.onePlace || 'Browse by need'}</p><h2>{t.coverageTitle || 'Choose a starting point'}</h2></div><p className="section-note">{t.coverage || 'Select a need to begin a category-specific conversation.'}</p></div><div className="category-grid">{categories.map((category, index) => <CategoryCard key={category.label} category={category} index={index} onStart={start} language={language} />)}</div></section>
       <LatestFeed language={language} />
-      <section className="why-section" aria-labelledby="why-title"><div className="section-intro"><p className="eyebrow">{landing.why}</p><h2 id="why-title">{landing.lessSearching}<br /><em>{landing.moreCertainty}</em></h2><p>{landing.whyBody}</p></div><MagicBento features={landing.features} /></section>
-      <ScrollExpand copy={landing} />
-      <section className="closing-section" id="language" aria-labelledby="closing-title"><div><p className="eyebrow">{landing.languageEyebrow}</p><h2 id="closing-title">{landing.languageTitle}<br /><em>{landing.languageTitleEm}</em></h2></div><div className="closing-action"><p>{landing.languageBody}</p><div className="landing-language-picker" aria-label={landing.footerLanguage}>{languages.map((item) => <button key={item.name} type="button" className={getLanguage(language).name === item.name ? 'language-active' : ''} aria-pressed={getLanguage(language).name === item.name} onClick={() => onLanguageChange?.(item.name)}>{item.nativeName}</button>)}</div><button className="text-link" type="button" onClick={onStart}>{landing.begin} <span aria-hidden="true">→</span></button></div></section>
+      <section className="stats-section section-frame"><div className="stats-intro"><p className="eyebrow">{t.why || 'Current coverage'}</p><h2>Built to make<br /><em>support visible.</em></h2><p>{t.whyBody || 'A growing catalogue of verified public support, organized for real-life needs.'}</p><a className="text-link" href="#how-it-works">Read our approach <span aria-hidden="true">↗</span></a></div><div className="stats-panel"><div className="stat-row"><span className="stat-number">01</span><div><strong>One focused start</strong><p>Begin with the kind of help you need, not a scheme name you may not know.</p></div><span className="stat-symbol">↗</span></div><div className="stat-row"><span className="stat-number">02</span><div><strong>Relevant by design</strong><p>Category-specific questions keep matches close to your actual situation.</p></div><span className="stat-symbol">◎</span></div><div className="stat-row"><span className="stat-number">03</span><div><strong>Ready for the next step</strong><p>Understand the fit, prepare your documents, and continue to the official source.</p></div><span className="stat-symbol">✓</span></div></div></section>
+      <section className="how-section section-frame" id="how-it-works"><div className="how-heading"><p className="eyebrow">From question to next step</p><h2>A useful answer<br /><em>has a shape.</em></h2></div><div className="steps-list"><div className="step-item"><span>01</span><div><strong>Choose your need</strong><p>Education, health, finance, agriculture, or the next category you need.</p></div><span aria-hidden="true">↗</span></div><div className="step-item"><span>02</span><div><strong>Tell us what matters</strong><p>Only the questions that help narrow your category — no one-size-fits-all form.</p></div><span aria-hidden="true">↗</span></div><div className="step-item"><span>03</span><div><strong>See your clearest matches</strong><p>Know why a scheme fits, what it offers, and what to gather before you apply.</p></div><span aria-hidden="true">↗</span></div></div></section>
     </main>
-    <footer className="site-footer"><div className="footer-brand"><span className="wordmark-mark" aria-hidden="true">S</span>SchemeSetu <span className="footer-year">— {landing.sih}</span></div><p>{landing.footerNote}</p><div className="footer-language" aria-label={landing.footerLanguage}>{languages.map((item) => <button key={item.name} type="button" className={getLanguage(language).name === item.name ? 'language-active' : ''} aria-pressed={getLanguage(language).name === item.name} onClick={() => onLanguageChange?.(item.name)}>{item.nativeName}</button>)}</div></footer>
+    <footer className="site-footer"><div className="footer-brand"><Mark /><span>Scheme<span className="wordmark-accent">Setu</span></span><small>PUBLIC SUPPORT, MADE CLEARER.</small></div><div className="footer-note"><span><i className="signal-dot" />{t.disclaimer || 'Always confirm details on the official government portal before applying.'}</span><span>© 2026 SchemeSetu</span></div></footer>
   </div>
 }
