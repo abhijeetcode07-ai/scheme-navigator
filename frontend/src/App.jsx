@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Landing from './components/Landing'
+import CategoryPage from './components/CategoryPage'
 import InputScreen from './components/InputScreen'
 import ResultsScreen from './components/ResultsScreen'
 import SchemeDetail from './components/SchemeDetail'
@@ -81,6 +82,11 @@ function App() {
     setScreen('updates')
   }
 
+  const showCategories = () => {
+    detailRequestRef.current += 1
+    setScreen('categories')
+  }
+
   const showInput = () => {
     matchRequestRef.current += 1
     setAiStatus(null)
@@ -148,12 +154,13 @@ function App() {
   let content = null
   if (screen === 'updates') content = <LatestUpdates language={language} onBack={showLanding} />
   else if (screen === 'profile') content = <ProfileDetails initialAnswers={answers || {}} onBack={showInput} onSubmit={showResults} />
+  else if (screen === 'categories') content = <CategoryPage language={language} onBack={showLanding} onSelect={() => showInput()} />
   else if (screen === 'browse') content = <BrowseSchemes language={language} onBack={showLanding} onSelect={showDetail} />
   else if (screen === 'checklist' && selectedScheme) content = <DocumentChecklist scheme={selectedScheme} localizedDocuments={detailAi?.documents} language={language} onBack={() => setScreen('detail')} />
   else if (screen === 'detail' && selectedScheme) content = <SchemeDetail scheme={selectedScheme} language={language} aiDetail={detailAi} aiStatus={aiStatus} onBack={() => setScreen('results')} onChecklist={showChecklist} />
   else if (screen === 'results') content = <ResultsScreen answers={answers} matches={matches} aiStatus={aiStatus} onEdit={showInput} onItemSelect={showDetail} />
   else if (screen === 'input') content = <InputScreen initialLanguage={language} onLanguageChange={updateLanguage} onSubmit={showProfile} onBack={showLanding} />
-  else content = <Landing language={language} onLanguageChange={updateLanguage} onStart={showInput} onBrowse={showBrowse} onLatest={showLatest} accountPanel={renderAccountPanel()} />
+  else content = <Landing language={language} onLanguageChange={updateLanguage} onStart={showCategories} onBrowse={showBrowse} onLatest={showLatest} accountPanel={renderAccountPanel()} />
 
   return <div className="app-shell theme-dark">
     {content}

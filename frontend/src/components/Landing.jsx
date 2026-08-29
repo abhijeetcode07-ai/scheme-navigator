@@ -14,10 +14,15 @@ const publicDatasets = [
 ]
 
 const categories = [
-  ['Education & scholarships', 'ED', 'amber', 'Current catalogue', 'Students, learners, first-generation applicants'],
-  ['Health & wellbeing', 'HL', 'blue', 'Coming next', 'Care, insurance, treatment support'],
-  ['Financial assistance', '₹', 'teal', 'Coming next', 'Income support, pensions, direct benefits'],
-  ['Agriculture & rural', 'AG', 'plum', 'Coming next', 'Farmers, livelihoods, rural households'],
+  ['Education', 'ED', 'amber', '43 local records', 'Scholarships, fellowships, fees, and learning support'],
+  ['Health & wellness', 'HL', 'blue', 'Explore route', 'Care, treatment, insurance, and family wellness'],
+  ['Jobs & skills', 'JS', 'teal', 'Explore route', 'Training, apprenticeships, placement, and work'],
+  ['Housing & utilities', 'HU', 'violet', 'Explore route', 'Homes, water, sanitation, power, and clean fuel'],
+  ['Finance & insurance', 'FI', 'amber', 'Explore route', 'Accounts, credit, pensions, insurance, and income'],
+  ['Agriculture & livelihoods', 'AL', 'green', 'Explore route', 'Farms, crop support, rural work, and enterprise'],
+  ['Women & child', 'WC', 'rose', 'Explore route', 'Safety, nutrition, care, and opportunity'],
+  ['Social justice', 'SJ', 'orange', 'Explore route', 'Inclusion, welfare, dignity, and community support'],
+  ['Disability support', 'DS', 'cyan', 'Explore route', 'Access, aids, rehabilitation, and inclusion'],
 ]
 
 const frontCopy = {

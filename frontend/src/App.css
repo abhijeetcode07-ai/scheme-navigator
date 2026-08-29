@@ -182,3 +182,6 @@
     border-right-color: var(--border);
   }
 }
+
+/* Shared interaction layer: specular highlight for every actionable button, with reduced-motion fallback. */
+button,.primary-button,.input-submit,.specular-button{position:relative;overflow:hidden;isolation:isolate;transition:transform .16s cubic-bezier(.23,1,.32,1),box-shadow .2s ease,background .2s ease}button:before,.primary-button:before,.input-submit:before,.specular-button:before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(112deg,transparent 20%,rgba(255,255,255,.28) 42%,transparent 62%);transform:translateX(-125%);transition:transform .55s cubic-bezier(.23,1,.32,1);pointer-events:none}button:hover:before,.primary-button:hover:before,.input-submit:hover:before,.specular-button:hover:before{transform:translateX(125%)}button:active,.primary-button:active,.input-submit:active,.specular-button:active{transform:scale(.97)}@media(prefers-reduced-motion:reduce){button:before,.primary-button:before,.input-submit:before,.specular-button:before{transition:none;display:none}}
