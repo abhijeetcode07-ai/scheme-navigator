@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { signInWithEmail, signInWithGoogle, signOut, signUpWithEmail, supabase, supabaseConfigured } from '../lib/supabase'
 import './AuthPanel.css'
+import './VisualStack.css'
+import { BorderGlow, SplitFlapText } from './VisualStack'
 
 export default function AuthPanel({ user, onAuthChange }) {
   const [open, setOpen] = useState(false)
@@ -56,10 +58,10 @@ export default function AuthPanel({ user, onAuthChange }) {
   return <>
     <button type="button" className="account-trigger" onClick={() => { setMessage(''); setOpen(true) }}>Sign in</button>
     {open && <div className="auth-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setOpen(false) }}>
-      <section className="auth-panel" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+      <BorderGlow className="auth-panel-glow"><section className="auth-panel" role="dialog" aria-modal="true" aria-labelledby="auth-title">
         <button type="button" className="auth-close" onClick={() => setOpen(false)} aria-label="Close sign-in dialog">×</button>
         <p className="eyebrow">Keep your path in one place</p>
-        <h2 id="auth-title">{mode === 'signin' ? 'Welcome back.' : 'Create your account.'}</h2>
+        <SplitFlapText as="h2" id="auth-title" className="auth-title">{mode === 'signin' ? 'Welcome back.' : 'Create your account.'}</SplitFlapText>
         <p className="auth-copy">Save conversations and return to your scheme history whenever you need it.</p>
         {!supabaseConfigured && <p className="auth-notice">Account sign-in is being configured. Add the Supabase public variables to use it.</p>}
         <button type="button" className="google-button" onClick={handleGoogle} disabled={busy || !supabaseConfigured}><span aria-hidden="true">G</span>{busy ? 'Connecting…' : 'Continue with Google'}</button>
@@ -73,7 +75,7 @@ export default function AuthPanel({ user, onAuthChange }) {
         </form>
         {message && <p className="auth-message" role="status">{message}</p>}
         <button type="button" className="auth-switch" onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setMessage('') }}>{mode === 'signin' ? 'Need an account? Create one' : 'Already have an account? Sign in'}</button>
-      </section>
+      </section></BorderGlow>
     </div>}
   </>
 }
