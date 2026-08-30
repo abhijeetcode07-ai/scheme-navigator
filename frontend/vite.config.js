@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import { handleGeminiRequest } from './src/server/gemini.mjs'
 
 export default defineConfig({
+  server: { allowedHosts: ['.manus.computer', 'localhost'] },
   plugins: [
     react(),
     {

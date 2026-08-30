@@ -5,7 +5,7 @@ import InputScreen from './components/InputScreen'
 import ResultsScreen from './components/ResultsScreen'
 import SchemeDetail from './components/SchemeDetail'
 import DocumentChecklist from './components/DocumentChecklist'
-import { matchSchemes } from './data/schemes'
+import { matchSchemes } from './data/fullSchemes'
 import { getCopy, getLanguage, interpolate } from './data/languages'
 import { requestDetailExplanation, requestMatchExplanations } from './lib/gemini'
 import './App.css'
@@ -13,7 +13,6 @@ import AuthPanel from './components/AuthPanel'
 import SetuSathi from './components/SetuSathi'
 import BrowseSchemes from './components/BrowseSchemes'
 import LatestUpdates from './components/LatestUpdates'
-import ProfileDetails from './components/ProfileDetails'
 import { supabase } from './lib/supabase'
 import { fetchPublishedSchemes } from './lib/catalog'
 
@@ -35,6 +34,7 @@ function App() {
   const [screen, setScreen] = useState('landing')
   const [language, setLanguage] = useState('English')
   const [answers, setAnswers] = useState(null)
+  const [selectedCategory, setSelectedCategory] = useState(null)
   const [matches, setMatches] = useState(null)
   const [catalogSchemes, setCatalogSchemes] = useState([])
   const [selectedScheme, setSelectedScheme] = useState(null)
@@ -56,6 +56,7 @@ function App() {
   const renderSetuSathi = useCallback(() => <SetuSathi language={language} user={user} answers={answers || {}} schemes={catalogSchemes.length ? catalogSchemes : (matches || [])} />, [language, user, answers, matches, catalogSchemes])
 
   useEffect(() => {
+    if (screen !== 'browse') return undefined
     let active = true
     fetchPublishedSchemes({ languageCode: getLanguage(language).name, page: 0, pageSize: 100 })
       .then((payload) => {
@@ -65,12 +66,7 @@ function App() {
         if (active) setCatalogSchemes([])
       })
     return () => { active = false }
-  }, [language])
-
-  const showProfile = (draftAnswers) => {
-    setAnswers(draftAnswers)
-    setScreen('profile')
-  }
+  }, [language, screen])
 
   const showBrowse = () => {
     detailRequestRef.current += 1
@@ -87,8 +83,9 @@ function App() {
     setScreen('categories')
   }
 
-  const showInput = () => {
+  const showInput = (categoryId = selectedCategory || 'education') => {
     matchRequestRef.current += 1
+    setSelectedCategory(categoryId)
     setAiStatus(null)
     setScreen('input')
   }
@@ -153,13 +150,12 @@ function App() {
 
   let content = null
   if (screen === 'updates') content = <LatestUpdates language={language} onBack={showLanding} />
-  else if (screen === 'profile') content = <ProfileDetails initialAnswers={answers || {}} onBack={showInput} onSubmit={showResults} />
-  else if (screen === 'categories') content = <CategoryPage language={language} onBack={showLanding} onSelect={() => showInput()} />
+  else if (screen === 'categories') content = <CategoryPage language={language} onBack={showLanding} onSelect={(categoryId) => showInput(categoryId)} />
   else if (screen === 'browse') content = <BrowseSchemes language={language} onBack={showLanding} onSelect={showDetail} />
-  else if (screen === 'checklist' && selectedScheme) content = <DocumentChecklist scheme={selectedScheme} localizedDocuments={detailAi?.documents} language={language} onBack={() => setScreen('detail')} />
+  else if (screen === 'checklist' && selectedScheme) content = <DocumentChecklist scheme={selectedScheme} localizedDocuments={detailAi?.documents} language={language} onBack={() => setScreen('detail')} onFindAnother={showCategories} onHome={showLanding} />
   else if (screen === 'detail' && selectedScheme) content = <SchemeDetail scheme={selectedScheme} language={language} aiDetail={detailAi} aiStatus={aiStatus} onBack={() => setScreen('results')} onChecklist={showChecklist} />
   else if (screen === 'results') content = <ResultsScreen answers={answers} matches={matches} aiStatus={aiStatus} onEdit={showInput} onItemSelect={showDetail} />
-  else if (screen === 'input') content = <InputScreen initialLanguage={language} onLanguageChange={updateLanguage} onSubmit={showProfile} onBack={showLanding} />
+  else if (screen === 'input') content = <InputScreen initialLanguage={language} selectedCategory={selectedCategory || 'education'} onSubmit={showResults} onBack={showCategories} />
   else content = <Landing language={language} onLanguageChange={updateLanguage} onStart={showCategories} onBrowse={showBrowse} onLatest={showLatest} accountPanel={renderAccountPanel()} />
 
   return <div className="app-shell theme-dark">

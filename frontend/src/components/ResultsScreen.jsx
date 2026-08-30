@@ -1,124 +1,17 @@
-import { useEffect, useRef, useState } from 'react'
-import { motion, useReducedMotion } from 'motion/react'
+import { useMemo, useState } from 'react'
 import './ResultsScreen.css'
-import { getCopy, interpolate } from '../data/languages'
-import { matchSchemes } from '../data/schemes'
+import { matchSchemes, getCategoryRecords, schemeCategoryNames } from '../data/fullSchemes'
 
-function GlareHover({ children, glareColor = '#E8A33D', glareOpacity = 0.25, glareAngle = -30, transitionDuration = 500 }) {
-  return (
-    <div
-      className="glare-hover"
-      style={{ '--glare-color': glareColor, '--glare-opacity': glareOpacity, '--glare-angle': `${glareAngle}deg`, '--glare-duration': `${transitionDuration}ms` }}
-    >
-      {children}
-    </div>
-  )
+function ResultCard({ item, index, onSelect }) {
+  return <button type="button" className="result-card" onClick={() => onSelect(item)}><span className="result-card-index">{String(index + 1).padStart(2, '0')}</span><span className="result-card-category">{item.category}</span><strong>{item.displayName || item.name}</strong><p>{item.reason || item.plainEligibility}</p><span className="result-card-meta"><b>{item.benefits || 'Benefit details on official record'}</b><span>Open scheme detail ↗</span></span></button>
 }
 
-function AnimatedList({ items, showGradients = true, enableArrowNavigation = true, displayScrollbar = true, onItemSelect, ariaLabel }) {
-  const rowRefs = useRef([])
-  const reduceMotion = useReducedMotion()
-  const [activeIndex, setActiveIndex] = useState(0)
-
-  useEffect(() => {
-    rowRefs.current = rowRefs.current.slice(0, items.length)
-  }, [items.length])
-
-  const safeActiveIndex = Math.min(activeIndex, Math.max(0, items.length - 1))
-
-  const focusRow = (index) => {
-    if (!items.length) return
-    const nextIndex = (index + items.length) % items.length
-    setActiveIndex(nextIndex)
-    rowRefs.current[nextIndex]?.focus()
-    rowRefs.current[nextIndex]?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'nearest' })
-  }
-
-  const handleKeyDown = (event, index) => {
-    if (enableArrowNavigation && event.key === 'ArrowDown') {
-      event.preventDefault()
-      focusRow(index + 1)
-    } else if (enableArrowNavigation && event.key === 'ArrowUp') {
-      event.preventDefault()
-      focusRow(index - 1)
-    } else if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault()
-      onItemSelect(items[index])
-    }
-  }
-
-  return (
-    <div className={`animated-list-shell ${showGradients ? 'has-gradients' : ''} ${displayScrollbar ? 'show-scrollbar' : 'hide-scrollbar'}`}>
-      {showGradients && <span className="list-gradient list-gradient-top" aria-hidden="true" />}
-      <div className="animated-list" role="listbox" aria-label={ariaLabel}>
-        {items.map((item, index) => (
-          <motion.div
-            className="animated-list-item"
-            key={item.id}
-            initial={reduceMotion ? false : { opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={reduceMotion ? { duration: 0 } : { duration: .4, delay: index * .07, ease: [0.23, 1, 0.32, 1] }}
-          >
-            <GlareHover glareColor="#E8A33D" glareOpacity={0.25} glareAngle={-30} transitionDuration={500}>
-              <button
-                className={`scheme-row ${safeActiveIndex === index ? 'is-active' : ''}`}
-                type="button"
-                role="option"
-                aria-selected={safeActiveIndex === index}
-                ref={(element) => { rowRefs.current[index] = element }}
-                onFocus={() => setActiveIndex(index)}
-                onKeyDown={(event) => handleKeyDown(event, index)}
-                onClick={() => onItemSelect(item)}
-              >
-                <span className="scheme-index">{String(index + 1).padStart(2, '0')}</span>
-                <span className="scheme-copy"><strong>{item.name}</strong><span>{item.reason}</span></span>
-                <span className="scheme-chevron" aria-hidden="true">↗</span>
-              </button>
-            </GlareHover>
-          </motion.div>
-        ))}
-      </div>
-      {showGradients && <span className="list-gradient list-gradient-bottom" aria-hidden="true" />}
-    </div>
-  )
-}
-
-export default function ResultsScreen({ answers, matches, onEdit, onItemSelect, aiStatus }) {
+export default function ResultsScreen({ answers, matches, onEdit, onItemSelect }) {
   const items = matches ?? matchSchemes(answers)
-  const hasMatches = items.length > 0
-  const language = answers?.language
-  const copy = getCopy(language).results
-  const [selectedItem, setSelectedItem] = useState(null)
-
-  const selectItem = (item) => {
-    setSelectedItem(item)
-    onItemSelect?.(item)
-  }
-
-  return (
-    <main className="results-page">
-      <header className="results-header">
-        <button className="edit-answers-link" type="button" onClick={onEdit}><span aria-hidden="true">←</span> {copy.back}</button>
-        <span className="results-step">{copy.step}</span>
-      </header>
-      <section className="results-content" aria-labelledby="results-title">
-        <div className="results-heading">
-          <p className="eyebrow">{copy.eyebrow}</p>
-          <h1 id="results-title">{copy.title}<br /><em>{copy.titleEm}</em></h1>
-          <p className="results-lede">{copy.lede}</p>
-          {aiStatus && <p className={`ai-status ai-status-${aiStatus.kind}`} role="status" aria-live="polite">{aiStatus.message}</p>}
-        </div>
-        {hasMatches ? (
-          <AnimatedList items={items} showGradients enableArrowNavigation displayScrollbar ariaLabel={copy.matched} onItemSelect={selectItem} />
-        ) : (
-          <div className="empty-state" role="status">
-            <span className="empty-mark" aria-hidden="true">—</span>
-            <p>{copy.empty}</p>
-            <button className="empty-edit-link" type="button" onClick={onEdit}>{copy.edit} <span aria-hidden="true">→</span></button>
-          </div>
-        )}
-        {selectedItem && <p className="selection-hint" role="status">{interpolate(copy.opening, { name: selectedItem.name })}</p>}
-      </section>
-    </main>
-  )
+  const [selected, setSelected] = useState(null)
+  const category = schemeCategoryNames[answers?.category] || answers?.category || 'Support'
+  const total = getCategoryRecords(answers?.category || '').length
+  const visible = useMemo(() => items.slice(0, 24), [items])
+  const choose = (item) => { setSelected(item); onItemSelect?.(item) }
+  return <main className="results-page results-page-rebuilt"><div className="results-topography" aria-hidden="true" /><header className="results-header"><button className="edit-answers-link" type="button" onClick={onEdit}><span aria-hidden="true">←</span> Edit route signal</button><span className="results-step">STEP 03 / 04 · MATCH FEED</span><span className="results-status">{category.toUpperCase()} / LIVE</span></header><section className="results-rebuilt-layout"><div className="results-rebuilt-heading"><p className="eyebrow"><span className="signal-dot" />MATCH ENGINE / {category.toUpperCase()}</p><h1>These routes<br /><em>fit your signal.</em></h1><p>We ranked {items.length} active records from the {category} catalogue. Open any route to inspect its eligibility, benefit, source, and application path.</p><div className="results-live-fact"><strong>{total || items.length}</strong><span>records in this category</span><small>Current local catalogue · verify each official source</small></div></div><div className="results-feed-wrap"><div className="results-feed-head"><span>01 / BEST MATCHES</span><span>{visible.length.toString().padStart(2, '0')} SHOWN</span></div>{visible.length ? <div className="results-feed" role="listbox" aria-label="Matched schemes">{visible.map((item, index) => <ResultCard key={item.id} item={item} index={index} onSelect={choose} />)}</div> : <div className="results-empty"><strong>No exact routes yet.</strong><p>Try editing your route signal and choose a broader answer.</p><button type="button" onClick={onEdit}>Edit answers ↗</button></div>}{selected && <p className="results-selection" role="status">Opening {selected.displayName || selected.name} …</p>}</div></section><div className="results-curved-loop" aria-hidden="true"><span>OFFICIAL SOURCE · CHECKED RECORD · PERSONAL ROUTE · {category.toUpperCase()} · </span><span>OFFICIAL SOURCE · CHECKED RECORD · PERSONAL ROUTE · {category.toUpperCase()} · </span></div></main>
 }

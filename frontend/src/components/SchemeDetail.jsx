@@ -1,87 +1,13 @@
-import { useEffect, useRef } from 'react'
-import { motion, useReducedMotion } from 'motion/react'
 import './SchemeDetail.css'
-import { getCopy, getDetailFallback, interpolate } from '../data/languages'
-
-function MaskedHeading({ text, tag = 'h1', mediaType = 'image', src = '/assets/paper-texture.jpg', fillScale = 1.2, parallax = 20, grayscale = true, reveal = 'wipe', trigger = 'view', align = 'left', weight = 700 }) {
-  const headingRef = useRef(null)
-  const reduceMotion = useReducedMotion()
-  const Heading = tag
-
-  useEffect(() => {
-    const heading = headingRef.current
-    if (!heading || reduceMotion || !parallax) return undefined
-
-    let frame
-    const update = () => {
-      frame = undefined
-      const progress = Math.max(-1, Math.min(1, (window.innerHeight / 2 - heading.getBoundingClientRect().top) / window.innerHeight))
-      heading.style.setProperty('--heading-parallax', `${progress * parallax}px`)
-    }
-    const handleScroll = () => { if (!frame) frame = window.requestAnimationFrame(update) }
-    update()
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => {
-      if (frame) window.cancelAnimationFrame(frame)
-      window.removeEventListener('scroll', handleScroll)
-    }
-  }, [parallax, reduceMotion])
-
-  return <Heading ref={headingRef} className={`masked-heading masked-heading-${reveal}`} data-media-type={mediaType} data-trigger={trigger} style={{ '--heading-image': `url(${src})`, '--heading-fill-scale': fillScale, '--heading-align': align, '--heading-weight': weight, filter: grayscale ? 'grayscale(1)' : undefined }}>{text}</Heading>
-}
-
-function GlareHover({ children, glareColor = '#E8A33D', glareOpacity = 0.2, glareAngle = -30, transitionDuration = 500 }) {
-  return <div className="detail-glare-hover" style={{ '--glare-color': glareColor, '--glare-opacity': glareOpacity, '--glare-angle': `${glareAngle}deg`, '--glare-duration': `${transitionDuration}ms` }}>{children}</div>
-}
-
-function SpecularButton({ children, variant = 'primary', disabled = false, onClick }) {
-  return <button className={`detail-specular-button detail-specular-${variant}`} type="button" disabled={disabled} onClick={onClick}><span>{children}</span><span className="detail-button-arrow" aria-hidden="true">↗</span></button>
-}
-
-function DetailCard({ label, title, children, action }) {
-  return <GlareHover><section className="detail-content-card"><p className="detail-card-label">{label}</p><h2>{title}</h2><div className="detail-card-body">{children}</div>{action}</section></GlareHover>
-}
 
 function isRealLink(link) { return typeof link === 'string' && /^https?:\/\//i.test(link.trim()) }
+function firstLink(value) { return String(value || '').match(/https?:\/\/[^\s)]+/i)?.[0] || '' }
+function DetailPanel({ label, title, children }) { return <section className="detail-panel"><p className="detail-panel-label">{label}</p><h2>{title}</h2><div className="detail-panel-body">{children}</div></section> }
 
-export default function SchemeDetail({ scheme, aiDetail, aiStatus, onBack, onChecklist, language }) {
-  const reduceMotion = useReducedMotion()
-  const copy = getCopy(language).detail
-  const fallback = getDetailFallback(language)
+export default function SchemeDetail({ scheme, aiDetail, aiStatus, onBack, onChecklist }) {
   if (!scheme) return null
-  const canApply = isRealLink(scheme.officialApplyLink)
   const displayName = aiDetail?.name || scheme.displayName || scheme.name
-  const displayMinistry = aiDetail?.ministry || scheme.ministry
-  const documents = aiDetail?.documents?.length ? aiDetail.documents : language === 'English' && scheme.documents?.length ? scheme.documents : [fallback.document]
-
-  const applyOfficial = () => {
-    if (canApply) window.open(scheme.officialApplyLink.trim(), '_blank', 'noopener,noreferrer')
-  }
-
-  return <main className="scheme-detail-page">
-    <header className="detail-header">
-      <button className="detail-back-link" type="button" onClick={onBack}><span aria-hidden="true">←</span> {copy.back}</button>
-      <span className="detail-step">{copy.step}</span>
-    </header>
-    <motion.div className="detail-layout" initial={reduceMotion ? false : { opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .55, ease: [0.23, 1, 0.32, 1] }}>
-      <div className="detail-intro">
-        <p className="eyebrow">{copy.eyebrow}</p>
-        <MaskedHeading text={displayName} tag="h1" mediaType="image" src="/assets/paper-texture.jpg" fillScale={1.2} parallax={20} grayscale reveal="wipe" trigger="view" align="left" weight={700} />
-        <p className="detail-ministry">{displayMinistry}</p>
-        <p className="detail-verification">{interpolate(copy.verified, { date: scheme.lastVerifiedDate })}</p>
-        {aiStatus && <p className={`detail-ai-status detail-ai-status-${aiStatus.kind}`} role="status" aria-live="polite">{aiStatus.message}</p>}
-      </div>
-      <div className="detail-sections">
-        <DetailCard label={copy.yourFit} title={copy.why}><p>{aiDetail?.why || fallback.why}</p></DetailCard>
-        <DetailCard label={copy.theSupport} title={copy.support}><p>{aiDetail?.support || fallback.support}</p></DetailCard>
-        <DetailCard label={copy.getReady} title={copy.before} action={<button className="checklist-inline-link" type="button" onClick={onChecklist}>{copy.checklistInline} <span aria-hidden="true">→</span></button>}>
-          <p className="detail-before-apply">{aiDetail?.beforeApply || fallback.before}</p>
-          <ul className="document-list">{documents.slice(0, 4).map((document) => <li key={document}>{document}</li>)}</ul>
-        </DetailCard>
-        <div className="detail-actions"><SpecularButton onClick={onChecklist}>{copy.checklist}</SpecularButton><SpecularButton variant="secondary" disabled={!canApply} onClick={applyOfficial}>{copy.official}</SpecularButton></div>
-        {!canApply && <p className="detail-link-note">{copy.linkNote}</p>}
-      </div>
-    </motion.div>
-    <footer className="detail-footer">{copy.footer}</footer>
-  </main>
+  const applyLink = firstLink(scheme.officialApplyLink) || firstLink(scheme.verificationSourceLink)
+  const documents = aiDetail?.documents?.length ? aiDetail.documents : scheme.documents || []
+  return <main className="scheme-detail-page scheme-detail-rebuilt"><div className="detail-mesh" aria-hidden="true" /><header className="detail-header"><button className="detail-back-link" type="button" onClick={onBack}><span aria-hidden="true">←</span> Back to match feed</button><span className="detail-step">STEP 04 / 04 · SCHEME DOSSIER</span><span className="detail-live">VERIFIED RECORD</span></header><section className="detail-rebuilt-hero"><div className="detail-rebuilt-title"><p className="eyebrow"><span className="signal-dot" />{scheme.category} / {scheme.sourceType === 'existing-verified' ? 'CORE DATASET' : 'MASTER DOSSIER'}</p><h1>{displayName}</h1><p className="detail-ministry">{aiDetail?.ministry || scheme.ministry || 'Government of India'}</p><p className="detail-verification">Last verified: <strong>{scheme.lastVerifiedDate || 'Not stated'}</strong></p>{aiStatus && <p className="detail-ai-status" role="status">{aiStatus.message}</p>}</div><div className="detail-stats-grid"><div><strong>{documents.length || '—'}</strong><span>document signals</span></div><div><strong>{scheme.category?.split(' ')[0] || '—'}</strong><span>route category</span></div><div><strong>{scheme.confidence || 'Recorded'}</strong><span>evidence status</span></div></div></section><section className="detail-rebuilt-grid"><DetailPanel label="01 / WHY THIS ROUTE" title="Eligibility in plain language"><p>{aiDetail?.why || scheme.plainEligibility || scheme.officialEligibility || 'Review the official record before applying.'}</p>{scheme.ageEligibility && <p className="detail-note"><b>Age signal:</b> {scheme.ageEligibility}</p>}{scheme.incomeCeiling && <p className="detail-note"><b>Income signal:</b> {scheme.incomeCeiling}</p>}</DetailPanel><DetailPanel label="02 / WHAT IT OPENS" title="Benefits and coverage"><p>{aiDetail?.support || scheme.benefits || 'Benefit details are not stated in this record.'}</p></DetailPanel><DetailPanel label="03 / SOURCE TRACE" title="Application pathway"><p>{scheme.applicationMode || 'Follow the official source for the current application process.'}</p><p className="detail-note"><b>Application window:</b> {scheme.applicationWindow || 'Check the official portal.'}</p><div className="detail-actions"><button className="detail-primary" type="button" onClick={onChecklist}>Build document checklist <span>↗</span></button>{isRealLink(applyLink) ? <a className="detail-secondary" href={applyLink} target="_blank" rel="noreferrer">Open official portal ↗</a> : <span className="detail-unavailable">Portal link needs verification</span>}</div></DetailPanel><DetailPanel label="04 / RESEARCH NOTE" title="Before you decide"><p>{scheme.notesFlags || 'No additional notes were supplied in the current record.'}</p>{scheme.verificationSourceLink && <a className="detail-source-link" href={firstLink(scheme.verificationSourceLink) || undefined} target="_blank" rel="noreferrer">View source reference ↗</a>}</DetailPanel></section><footer className="detail-footer">SchemeSetu helps you find the route. The official department decides eligibility and approval.</footer></main>
 }
