@@ -106,3 +106,5 @@
 @media(prefers-reduced-motion:reduce){.landing-page .hero-copy>*{animation:none}.hero-orb:before,.hero-orb:after,.hero-orb .orb-core,.hero-orb .orb-ring,.hero-orb .orb-ray,.hero-orb i{animation:none}.landing-page .hero-trustbar{animation:none}}
 /* The legacy hero descendant rule is intentionally superseded for the new single-focal-point composition. */
 .landing-page .hero-section > .hero-orb{position:absolute;z-index:2}.landing-page .hero-section > .hero-copy{position:relative;z-index:4}
+/* Structural fix: escape the inherited editorial max-width so the hero owns the full viewport. */
+.landing-page .hero-section{width:100vw;max-width:none;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw);padding-left:clamp(24px,6vw,96px);padding-right:clamp(24px,6vw,96px)}
