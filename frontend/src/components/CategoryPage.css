@@ -25,4 +25,7 @@
 .category-stat strong{color:#DCE5EA;text-shadow:0 0 15px rgba(205,218,226,.16)}
 .category-stat:hover{background:linear-gradient(145deg,rgba(35,53,68,.9),rgba(12,20,30,.94));box-shadow:0 15px 36px rgba(0,0,0,.24)}
 @media(max-width:620px){.category-ghost-fibers{opacity:.48}.category-ghost-fibers .ghost-fibers-container{inset:-12%;width:124%;height:124%;opacity:.68}}
+
+/* Structural-only fix: let Page 2 own the full viewport instead of inheriting a 1240px content cap. */
+.category-page .category-layout{width:100vw;max-width:none;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw);padding-left:clamp(30px,5vw,74px);padding-right:clamp(30px,5vw,74px);grid-template-columns:80px minmax(0,1fr)}
 @media(prefers-reduced-motion:reduce){.category-ghost-fibers{opacity:.5}.category-ghost-fibers .ghost-fibers-container{filter:contrast(1.04) brightness(.68)}}
