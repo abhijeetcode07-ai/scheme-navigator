@@ -249,6 +249,212 @@ npm run lint       # run Oxlint
 
 Run the SQL files in `supabase/migrations/` (in order) against your Supabase project, then optionally load `supabase/seed/` for canonical and verified scheme data.
 
+```bash
+npm run dev
+```
+
+Vite will print the local development URL, usually:
+
+```text
+http://localhost:5173
+```
+
+### Create a production build
+
+```bash
+npm run build
+```
+
+### Preview the production build locally
+
+```bash
+npm run preview
+```
+
+### Run linting
+
+```bash
+npm run lint
+```
+
+## Environment Configuration
+
+Create a local environment file at:
+
+```text
+frontend/.env
+```
+
+Add the Gemini key as a server-side variable:
+
+```env
+GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+Do not use a `VITE_` prefix for this secret. Variables beginning with `VITE_` are exposed to browser-side code by Vite and must not contain private API keys.
+
+The `.env` file must never be committed to GitHub. The repository should contain only a safe template such as `.env.example`:
+
+```env
+# Server-side only. Never commit a real key.
+GEMINI_API_KEY=
+```
+
+### Vercel environment variables
+
+For production deployment, configure the following variables in the Vercel project settings:
+
+```text
+Project Settings → Environment Variables
+```
+
+| Variable | Scope | Purpose |
+| --- | --- | --- |
+| `GEMINI_API_KEY` | Server-side | Google Gemini API key for multilingual scheme explanations and translations. |
+| `GEMINI_MODEL` | Server-side | Optional; defaults to `gemini-2.5-flash`. |
+| `NEWS_FEED_URLS` | Server-side | Comma-separated list of allowlisted RSS/Atom feeds (e.g. PIB, ETGovernment). |
+| `FEED_REFRESH_SECRET` | Server-side | Secret header required for manual feed refresh (`x-feed-refresh-secret`). |
+| `CRON_SECRET` | Server-side | Secret bearer token used by Vercel Cron to trigger daily feed ingestion. |
+| `SUPABASE_URL` | Server-side | Supabase project URL for serverless endpoints. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-side | Supabase service-role secret key for administrative feed writes. |
+| `VITE_SUPABASE_URL` | Client & Server | Public Supabase endpoint for client-side queries and authentication. |
+| `VITE_SUPABASE_ANON_KEY` | Client-side | Public Supabase anonymous key. |
+
+Enable them for the environments where the application is deployed, normally **Production**, **Preview**, and optionally **Development**. Redeploy after changing variables.
+
+## Live Feed System
+
+The **Live Feed** provides a trustworthy, continuously refreshed public-information feed for Indian government schemes, scholarships, welfare, aid, and related official announcements.
+
+### Official-First Source Hierarchy
+
+SchemeSetu enforces a strict hierarchy and transparent attribution for all feed entries:
+
+1. **Official Government Source (Primary):** Press Information Bureau (PIB) RSS (`https://pib.gov.in/RssMain.aspx?ModId=6&Lang=1&Regid=1`).
+2. **Ministry Announcements:** Verified official ministry feeds (`*.gov.in` / `*.nic.in`).
+3. **Reputable News Fallback:** Trusted reporting from ETGovernment (`government.economictimes.indiatimes.com/rss/education`), strictly labeled as **Reputable news** and never represented as an official announcement.
+
+Arbitrary hostnames outside the server-side allowlist are automatically rejected. All entries are deduplicated by `source_url`, sanitized to plain text, and link directly to the original public notice.
+
+### Scheduled and Manual Ingestion
+
+- **Scheduled Ingestion:** Vercel Cron automatically triggers `POST /api/feed` daily at `0 6 * * *` UTC using the configured `CRON_SECRET`.
+- **Manual Maintainer Refresh:** Maintainers can trigger an immediate refresh with:
+
+```bash
+curl -X POST https://your-domain.vercel.app/api/feed \
+  -H "x-feed-refresh-secret: your_feed_refresh_secret"
+```
+
+- **Client Consumption:** The browser loads live items via `GET /api/feed` (cached with `s-maxage=300, stale-while-revalidate=900`) and falls back gracefully to Supabase direct queries or an accessible offline state.
+
+## AI and Data Safety Model
+
+SchemeSetu follows a separated responsibility model:
+
+| Responsibility | Implementation |
+| --- | --- |
+| Eligibility matching | Local deterministic JavaScript matcher |
+| Canonical scheme records | Normalized dataset in `schemes.js` |
+| Translation and explanation | Server-side Gemini proxy |
+| Official application destination | Source URL from the scheme record |
+| Fallback behavior | Verified local copy in the language dictionary |
+
+Gemini receives the selected language, the user’s submitted context, and the relevant normalized scheme record. The prompt explicitly instructs the model not to add requirements, change eligibility, invent benefits, alter dates or amounts, or claim guaranteed approval.
+
+The browser should communicate with the application proxy rather than directly exposing the Gemini credential. Never place `GEMINI_API_KEY` in React components, client-side modules, public assets, browser storage, or committed configuration files.
+
+## User Flow
+
+### 1. Landing page
+
+The landing page communicates the core value proposition and provides the primary entry point into the discovery experience.
+
+### 2. Language and context
+
+Users select one of the eight supported languages and describe their situation using structured answers and optional natural-language context. The voice control can populate the free-text context field when supported by the browser.
+
+### 3. Matching results
+
+The local matcher filters the 43 normalized records. Each result shows a scheme name, a concise reason, and a clear interaction affordance. Users can edit their answers and try again.
+
+### 4. Scheme detail
+
+The detail screen separates the user’s fit, scheme support, application preparation, verification information, and official application action. Long titles wrap safely and do not overlap surrounding content.
+
+### 5. Document checklist
+
+The checklist summarizes documents associated with the selected record. Users can mark preparation items as complete before visiting the official source.
+
+## Deployment on Vercel
+
+The project is prepared for deployment on Vercel. A typical deployment process is:
+
+```bash
+cd scheme-navigator
+git add .
+git commit -m "Update SchemeSetu multilingual scheme translation"
+git push origin main
+```
+
+When the GitHub repository is connected to Vercel, a push to `main` should create a new production deployment according to the project’s Vercel settings.
+
+Before testing production, verify the following:
+
+1. The latest commit is visible on GitHub’s `main` branch.
+2. `GEMINI_API_KEY` is configured in Vercel.
+3. The Vercel build command points to the `frontend` project directory if required.
+4. The production deployment completed successfully.
+5. Language selection persists from the input page through the results, detail, and checklist pages.
+6. A non-English result displays translated scheme names and explanations.
+7. The official application link still opens the canonical government source.
+
+## Testing Checklist
+
+Use this checklist before publishing a release:
+
+| Area | Verification |
+| --- | --- |
+| Build | `npm run build` completes without errors. |
+| Lint | `npm run lint` reports no warnings or errors. |
+| Language | Test English plus at least two regional languages. |
+| Persistence | Confirm the selected language remains active on every page. |
+| Matching | Verify known eligible and ineligible test profiles. |
+| AI fallback | Test the app with Gemini unavailable and confirm safe local copy appears. |
+| Voice | Test microphone permission, recognition status, and typed-input fallback. |
+| Accessibility | Navigate using the keyboard and inspect focus visibility. |
+| Responsive layout | Test narrow mobile and wide desktop viewports. |
+| Long content | Test long scheme names, long documents, and translated text wrapping. |
+| Security | Confirm no API key appears in browser bundles or committed files. |
+| Links | Confirm official application links open the intended source. |
+
+## Known Limitations
+
+Browser speech recognition is not uniformly supported across all browsers, operating systems, and languages. Text input remains available when recognition is unavailable or permission is denied.
+
+AI translation requires a correctly configured server-side Gemini key. When Gemini is not configured, SchemeSetu does not stop working; it uses deterministic matching and verified fallback text. Because AI-generated explanations are not authoritative, users should always confirm current requirements on the official government source before applying.
+
+Government schemes, application windows, income limits, and document requirements may change over time. The dataset should be reviewed and refreshed periodically from authoritative sources before production use.
+
+## Contributing
+
+Contributions are welcome. Before opening a pull request, please:
+
+1. Explain the problem and the proposed change.
+2. Keep eligibility logic separate from presentation logic.
+3. Preserve the design-token system in `index.css`.
+4. Avoid introducing Tailwind or unrelated styling systems.
+5. Keep API keys and personal data out of commits.
+6. Test keyboard navigation, responsive layout, reduced-motion behavior, and at least one regional language.
+7. Run the build and lint commands before submitting.
+
+For changes to scheme records, include the source, verification date, affected eligibility fields, and any official application URL updates.
+
+## License
+
+Add the project’s chosen license here before making the repository public or accepting external contributions. If no license is present, all rights remain reserved by default.
+
+
 ## Disclaimer
 
 SchemeSetu aggregates and explains publicly available scheme information for discovery purposes only. Always confirm current eligibility, benefit amounts, deadlines, and required documents on the relevant ministry's official portal before applying. SchemeSetu does not process applications, collect government fees, or act on behalf of any government body.
