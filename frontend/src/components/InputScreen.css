@@ -120,3 +120,5 @@ form { padding-top: 31px; }
 @keyframes input-pulse{50%{transform:scale(1.22);box-shadow:0 0 0 8px rgba(127,210,192,.03),0 0 22px rgba(127,210,192,.95)}}
 @media(max-width:860px){.input-page-category .vs-globe{top:18%;right:-12%;opacity:.42}.input-stack-legend{margin-top:28px}.input-bento-glow{margin-top:0}}
 @media(prefers-reduced-motion:reduce){.legend-pulse{animation:none}}
+
+.voice-input-controls{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}.voice-input-button{display:inline-flex;align-items:center;gap:8px;padding:8px 11px;border:1px solid rgba(127,210,192,.38);border-radius:7px;background:rgba(75,145,137,.12);color:#b7e3d9;font:10px 'IBM Plex Mono',monospace;cursor:pointer}.voice-input-button:hover,.voice-input-button.is-listening{border-color:#8edcca;background:rgba(75,145,137,.28)}.voice-input-button:disabled{opacity:.65;cursor:wait}.voice-input-error{color:#f3b9a9;font:9px 'IBM Plex Mono',monospace}.voice-input-ready{color:#8edcca;font:9px 'IBM Plex Mono',monospace}

@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import './InputScreen.css'
 import './VisualStack.css'
 import { getCopy, getLanguage, getOptionLabel } from '../data/languages'
 import { categoryRecordCounts } from '../data/fullSchemes'
+import { requestVoiceTranslation } from '../lib/gemini'
 import { BlackHole, BorderGlow, Globe, MagicBento, MagicRings, SplitFlapText } from './VisualStack'
 
 const definitions = {
@@ -26,12 +27,47 @@ export default function InputScreen({ onSubmit, onBack, initialLanguage = 'Engli
   const category = definitions[selectedCategory] || definitions.education
   const [answers, setAnswers] = useState({ language: initialLanguage, categoryId: selectedCategory })
   const [submitted, setSubmitted] = useState(false)
+  const [voiceState, setVoiceState] = useState('idle')
+  const [voiceError, setVoiceError] = useState('')
+  const recognitionRef = useRef(null)
   const language = getLanguage(answers.language).name
   const copy = getCopy(language).input
   const recordCount = categoryRecordCounts[category.name] || 0
+  const voiceCopy = copy.voice || {}
+  const speechLocale = getLanguage(language).speechLocale
+  const voiceSupported = typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)
+  useEffect(() => () => { recognitionRef.current?.stop?.() }, [])
+  const startVoice = () => {
+    if (!voiceSupported) { setVoiceState('error'); setVoiceError(voiceCopy.unsupported); return }
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    const recognition = new Recognition()
+    recognition.lang = speechLocale
+    recognition.interimResults = false
+    recognition.continuous = false
+    recognition.onstart = () => { setVoiceState('listening'); setVoiceError('') }
+    recognition.onerror = (event) => { setVoiceState('error'); setVoiceError(event.error === 'not-allowed' ? voiceCopy.permission : event.error === 'no-speech' ? voiceCopy.noSpeech : voiceCopy.error) }
+    recognition.onend = () => { setVoiceState((current) => current === 'listening' ? 'idle' : current) }
+    recognition.onresult = async (event) => {
+      const transcript = Array.from(event.results).map((result) => result[0]?.transcript || '').join(' ').trim()
+      if (!transcript) return
+      setVoiceState('translating')
+      try {
+        const result = await requestVoiceTranslation({ language, transcript })
+        update('notes', result.text || transcript)
+        setVoiceState('ready')
+      } catch {
+        update('notes', transcript)
+        setVoiceState('ready')
+        setVoiceError('')
+      }
+    }
+    recognitionRef.current = recognition
+    recognition.start()
+  }
+  const stopVoice = () => { recognitionRef.current?.stop?.(); setVoiceState('idle') }
   const update = (key, value) => setAnswers((current) => ({ ...current, [key]: value }))
   const ready = useMemo(() => category.fields.every((field) => answers[field.key]), [answers, category.fields])
   const submit = (event) => { event.preventDefault(); if (!ready) { setSubmitted(true); return } onSubmit({ ...answers, category: selectedCategory }) }
 
-  return <main className="input-page input-page-category"><BlackHole /><Globe /><MagicRings /><header className="input-nav"><button className="back-link" type="button" onClick={onBack}><span aria-hidden="true">←</span> {copy.back}</button><SplitFlapText className="step-count">{copy.step} · {category.name}</SplitFlapText><span className="input-language">{language}</span></header><section className="input-workspace"><div className="input-heading"><p className="eyebrow"><span className="signal-dot" />{category.eyebrow}</p><h1>{category.title}</h1><p className="input-fact"><strong>{recordCount || 'Local'} active records.</strong> The next questions are tuned to the {category.name.toLowerCase()} dataset, not a generic profile.</p><p className="input-instruction">Answer the route signal below. We use your inputs to rank records, then show the evidence and official next step.</p><div className="input-stack-legend"><span className="legend-pulse" /> BLACK HOLE / GLOBE / RINGS <b>01—06</b></div></div><BorderGlow className="input-bento-glow"><MagicBento><form className="input-bento" onSubmit={submit}><div className="input-bento-label"><SplitFlapText>PROFILE / 02</SplitFlapText><strong>Build your {category.name.toLowerCase()} signal</strong><small>4 route-specific fields · {recordCount} records</small></div>{category.fields.map((field) => <OptionField key={field.key} field={field} value={answers[field.key]} language={language} onChange={update} />)}<label className="input-text-field input-notes"><span>{copy.notes} <small>({copy.optional})</small></span><textarea value={answers.notes || ''} onChange={(event) => update('notes', event.target.value)} placeholder={copy.placeholder} rows="3" /></label>{submitted && !ready && <p className="input-error" role="alert">{copy.incomplete}</p>}<div className="input-submit-row"><button className="input-submit" type="submit"><span>{copy.find}</span><span aria-hidden="true">↗</span></button><span className="input-privacy">{copy.privacy}</span></div></form></MagicBento></BorderGlow></section></main>
+  return <main className="input-page input-page-category"><BlackHole /><Globe /><MagicRings /><header className="input-nav"><button className="back-link" type="button" onClick={onBack}><span aria-hidden="true">←</span> {copy.back}</button><SplitFlapText className="step-count">{copy.step} · {category.name}</SplitFlapText><span className="input-language">{language}</span></header><section className="input-workspace"><div className="input-heading"><p className="eyebrow"><span className="signal-dot" />{category.eyebrow}</p><h1>{category.title}</h1><p className="input-fact"><strong>{recordCount || 'Local'} active records.</strong> The next questions are tuned to the {category.name.toLowerCase()} dataset, not a generic profile.</p><p className="input-instruction">Answer the route signal below. We use your inputs to rank records, then show the evidence and official next step.</p><div className="input-stack-legend"><span className="legend-pulse" /> BLACK HOLE / GLOBE / RINGS <b>01—06</b></div></div><BorderGlow className="input-bento-glow"><MagicBento><form className="input-bento" onSubmit={submit}><div className="input-bento-label"><SplitFlapText>PROFILE / 02</SplitFlapText><strong>Build your {category.name.toLowerCase()} signal</strong><small>4 route-specific fields · {recordCount} records</small></div>{category.fields.map((field) => <OptionField key={field.key} field={field} value={answers[field.key]} language={language} onChange={update} />)}<label className="input-text-field input-notes"><span>{copy.notes} <small>({copy.optional})</small></span><textarea value={answers.notes || ''} onChange={(event) => update('notes', event.target.value)} placeholder={copy.placeholder} rows="3" /><div className="voice-input-controls"><button type="button" className={`voice-input-button ${voiceState === 'listening' ? 'is-listening' : ''}`} onClick={voiceState === 'listening' ? stopVoice : startVoice} disabled={voiceState === 'translating'} aria-label={voiceState === 'listening' ? voiceCopy.stopLabel : voiceCopy.startLabel}><span aria-hidden="true">{voiceState === 'translating' ? '…' : voiceState === 'listening' ? '■' : '●'}</span>{voiceState === 'translating' ? 'Translating…' : voiceState === 'listening' ? voiceCopy.listening : voiceCopy.use}</button>{voiceError && <small className="voice-input-error" role="status">{voiceError}</small>}{voiceState === 'ready' && <small className="voice-input-ready" role="status">{voiceCopy.ready || 'Voice translated into your selected language.'}</small>}</div></label>{submitted && !ready && <p className="input-error" role="alert">{copy.incomplete}</p>}<div className="input-submit-row"><button className="input-submit" type="submit"><span>{copy.find}</span><span aria-hidden="true">↗</span></button><span className="input-privacy">{copy.privacy}</span></div></form></MagicBento></BorderGlow></section></main>
 }

@@ -22,3 +22,7 @@ export function requestMatchExplanations({ language, answers, schemes, signal })
 export function requestDetailExplanation({ language, answers, scheme, signal }) {
   return postGemini({ mode: 'detail', language, answers, scheme }, signal)
 }
+
+export function requestVoiceTranslation({ language, transcript, signal }) {
+  return postGemini({ mode: 'translate', language, transcript }, signal)
+}

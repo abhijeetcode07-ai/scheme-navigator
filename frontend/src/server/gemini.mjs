@@ -37,6 +37,16 @@ function buildPrompt(mode, language, answers, schemes, scheme, messages = []) {
     return `You are SchemeSetu, a careful plain-language guide to Indian government education and scholarship schemes. Write entirely in ${selectedLanguage}. The deterministic eligibility match has already been made by the app; do not invent new eligibility, benefits, deadlines, documents, or amounts. Use only the supplied record. If the record contains an uncertainty or verification flag, preserve that caution. Translate the scheme name and ministry too. Return JSON only with exactly these fields: name, ministry, why, support, beforeApply, applicationMode, applicationWindow, notesFlags, documents. All text fields must be strings and documents must be an array of short document strings using only the supplied record. Keep each text field to 1-3 short sentences. Do not translate URLs, official abbreviations, currency values, or dates.\n\nUser context:\n${JSON.stringify(answerContext)}\n\nScheme record:\n${JSON.stringify(normalizeScheme(scheme))}`
   }
 
+  if (mode === 'translate') {
+    return { text: cleanText(data?.text, 3000) }
+  }
+  if (mode === 'translate') {
+    return `You are SchemeSetu's voice translation assistant. Translate the supplied spoken transcript into natural, clear ${selectedLanguage}. Preserve names, places, numbers, dates, scheme names, abbreviations, and uncertainty. Do not add facts or commentary. Return JSON only with exactly one field: text.
+
+Spoken transcript:
+${cleanText(answers?.transcript, 3000)}`
+  }
+
   if (mode === 'chat') {
     const history = messages.slice(-10).map((m) => `${m.role === 'user' ? 'User' : 'SetuSathi'}: ${m.content}`).join('\n')
     return `You are SetuSathi, the conversational AI assistant for SchemeSetu, a generalized Indian government-scheme and citizen-aid finder. You help people understand education, livelihoods, health, housing, finance, insurance, social protection, disability, women-and-child support, agriculture, skills, and other public schemes. Write entirely in ${selectedLanguage}. Be helpful, empathetic, concise, and professional. Use the supplied published records as the only factual scheme source. Never invent eligibility, amounts, deadlines, documents, or application routes. If the requested scheme or fact is not in the supplied records, say that you do not have a verified answer and direct the user to the linked official portal or to Browse Schemes. For eligibility questions, explain that matching is indicative and the official authority makes the final decision. Preserve uncertainty and current-cycle caveats. Return JSON only with exactly one field: content.\n\nUser context:\n${JSON.stringify(answerContext)}\n\nPublished scheme records for reference:\n${JSON.stringify(schemes.map((item) => normalizeScheme(item, true)))}\n\nConversation history:\n${history}`
@@ -115,16 +125,16 @@ async function callGemini(mode, language, answers, schemes, scheme, messages = [
   const validated = validateOutput(mode, parsed, sourceSchemes)
   if (!validated || (mode === 'matches' && validated.length === 0)) return jsonResponse(502, { code: 'invalid_output', message: 'Gemini returned an unusable explanation. The verified scheme text is still available.' })
   if (mode === 'chat') return jsonResponse(200, { message: validated })
-  return jsonResponse(200, mode === 'detail' ? { detail: validated } : { explanations: validated })
+  return jsonResponse(200, mode === 'detail' ? { detail: validated } : mode === 'translate' ? { text: validated.text } : { explanations: validated })
 }
 
 export async function handleGeminiRequest({ method, body }) {
   if (method !== 'POST') return jsonResponse(405, { code: 'method_not_allowed', message: 'Only POST is supported.' })
   if (!body || typeof body !== 'object') return jsonResponse(400, { code: 'invalid_request', message: 'The request body must be JSON.' })
 
-  const mode = body.mode === 'chat' ? 'chat' : (body.mode === 'detail' ? 'detail' : 'matches')
+  const mode = body.mode === 'chat' ? 'chat' : (body.mode === 'detail' ? 'detail' : (body.mode === 'translate' ? 'translate' : 'matches'))
   const language = cleanText(body.language, 80)
-  const answers = body.answers && typeof body.answers === 'object' ? body.answers : {}
+  const answers = body.answers && typeof body.answers === 'object' ? body.answers : { transcript: cleanText(body.transcript, 3000) }
   const schemes = Array.isArray(body.schemes) ? body.schemes.slice(0, MAX_SCHEMES).map(normalizeScheme).filter((scheme) => scheme.id && scheme.name) : []
   const scheme = normalizeScheme(body.scheme)
   const messages = Array.isArray(body.messages) ? body.messages.slice(-10).map((m) => ({ role: String(m.role), content: cleanText(m.content, 2000) })) : []
@@ -132,6 +142,7 @@ export async function handleGeminiRequest({ method, body }) {
   if (mode === 'matches' && schemes.length === 0) return jsonResponse(400, { code: 'no_schemes', message: 'No matched schemes were provided.' })
   if (mode === 'detail' && (!scheme.id || !scheme.name)) return jsonResponse(400, { code: 'no_scheme', message: 'No scheme was provided.' })
   if (mode === 'chat' && messages.length === 0) return jsonResponse(400, { code: 'no_messages', message: 'No messages were provided.' })
+  if (mode === 'translate' && !answers.transcript) return jsonResponse(400, { code: 'no_transcript', message: 'No spoken transcript was provided.' })
 
   try {
     return await callGemini(mode, language, answers, schemes, scheme, messages)
