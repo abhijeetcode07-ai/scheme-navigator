@@ -234,8 +234,20 @@ export default async function handler(request, response) {
       limit: String(limit),
     })
     try {
-      const data = await supabaseRest(`feed_items?${query.toString()}`)
-      const items = Array.isArray(data) ? data : []
+      let data = await supabaseRest(`feed_items?${query.toString()}`)
+      let items = Array.isArray(data) ? data : []
+      let refreshReport = null
+      // Bootstrap an empty production database immediately. Once rows exist,
+      // normal reads stay cheap and scheduled refreshes handle new items.
+      if (!items.length) {
+        try {
+          refreshReport = await refreshFeeds()
+          data = await supabaseRest(`feed_items?${query.toString()}`)
+          items = Array.isArray(data) ? data : []
+        } catch (refreshError) {
+          refreshReport = { error: refreshError.message }
+        }
+      }
 
       const sourceCounts = {}
       for (const item of items) {
@@ -263,6 +275,7 @@ export default async function handler(request, response) {
             refreshedAt: newestTime,
             count: items.length,
             sources: sourcesMeta,
+            refresh: refreshReport,
           },
         })
     } catch (error) {
