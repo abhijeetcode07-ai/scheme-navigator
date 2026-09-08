@@ -6,7 +6,7 @@ import { getCopy, interpolate } from '../data/languages'
 import { AnimatedList, CurvedLoop, LaserFlow, MagicBento, ScrollStack, StrokeText, Topography } from './VisualStack'
 
 function ResultCard({ item, index, onSelect, copy }) {
-  return <MagicBento className="result-card-shell" data-stack-card="true"><button type="button" className="result-card" onClick={() => onSelect(item)}><span className="result-card-index">{String(index + 1).padStart(2, '0')}</span><span className="result-card-category">{item.category}</span><strong>{item.displayName || item.name}</strong><p>{item.reason || item.plainEligibility}</p><span className="result-card-meta"><b>{item.benefits || 'Benefit details on official record'}</b><span>{copy.opening.replace('{name}', item.displayName || item.name)} ↗</span></span></button></MagicBento>
+  return <MagicBento className="result-card-shell" data-stack-card="true"><button type="button" className="result-card" onClick={() => onSelect(item)}><span className="result-card-index">{String(index + 1).padStart(2, '0')}</span><span className="result-card-category">{item.category}</span><strong>{item.displayName || item.name}</strong><p>{item.reason || item.plainEligibility}</p><span className="result-card-meta"><b>{copy.matched}</b><span>{copy.opening.replace('{name}', item.displayName || item.name)} ↗</span></span></button></MagicBento>
 }
 
 export default function ResultsScreen({ answers, matches, onEdit, onItemSelect }) {

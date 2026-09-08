@@ -18,6 +18,9 @@ function normalizeScheme(scheme, compact = false) {
     benefits: cleanText(scheme?.benefits, compact ? 700 : 1800),
     documents: Array.isArray(scheme?.documents) ? scheme.documents.slice(0, compact ? 6 : 10).map((item) => cleanText(item, compact ? 220 : 400)).filter(Boolean) : [],
     notesFlags: cleanText(scheme?.notesFlags, compact ? 500 : 1000),
+    ministry: cleanText(scheme?.ministry, compact ? 300 : 500),
+    applicationMode: cleanText(scheme?.applicationMode, compact ? 500 : 900),
+    applicationWindow: cleanText(scheme?.applicationWindow, compact ? 400 : 700),
   }
 }
 
@@ -31,7 +34,7 @@ function buildPrompt(mode, language, answers, schemes, scheme, messages = []) {
   }
 
   if (mode === 'detail') {
-    return `You are SchemeSetu, a careful plain-language guide to Indian government education and scholarship schemes. Write entirely in ${selectedLanguage}. The deterministic eligibility match has already been made by the app; do not invent new eligibility, benefits, deadlines, documents, or amounts. Use only the supplied record. If the record contains an uncertainty or verification flag, preserve that caution. Translate the scheme name and ministry too. Return JSON only with exactly these fields: name, ministry, why, support, beforeApply, documents. The first five fields must be strings and documents must be an array of short document strings using only the supplied record. Keep each text field to 1-3 short sentences. Do not translate URLs, official abbreviations, currency values, or dates.\n\nUser context:\n${JSON.stringify(answerContext)}\n\nScheme record:\n${JSON.stringify(normalizeScheme(scheme))}`
+    return `You are SchemeSetu, a careful plain-language guide to Indian government education and scholarship schemes. Write entirely in ${selectedLanguage}. The deterministic eligibility match has already been made by the app; do not invent new eligibility, benefits, deadlines, documents, or amounts. Use only the supplied record. If the record contains an uncertainty or verification flag, preserve that caution. Translate the scheme name and ministry too. Return JSON only with exactly these fields: name, ministry, why, support, beforeApply, applicationMode, applicationWindow, notesFlags, documents. All text fields must be strings and documents must be an array of short document strings using only the supplied record. Keep each text field to 1-3 short sentences. Do not translate URLs, official abbreviations, currency values, or dates.\n\nUser context:\n${JSON.stringify(answerContext)}\n\nScheme record:\n${JSON.stringify(normalizeScheme(scheme))}`
   }
 
   if (mode === 'chat') {
@@ -77,6 +80,9 @@ function validateOutput(mode, data, sourceSchemes) {
       support: cleanText(data.support, 1800),
       beforeApply: cleanText(data.beforeApply, 1400),
       documents: Array.isArray(data.documents) ? data.documents.slice(0, 10).map((item) => cleanText(item, 400)).filter(Boolean) : [],
+      applicationMode: cleanText(data.applicationMode, 900),
+      applicationWindow: cleanText(data.applicationWindow, 700),
+      notesFlags: cleanText(data.notesFlags, 1000),
     }
   }
   if (!Array.isArray(data)) return null

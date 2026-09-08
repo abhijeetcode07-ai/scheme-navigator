@@ -6,6 +6,8 @@ export const languages = [
   { name: 'Kannada', nativeName: 'ಕನ್ನಡ', speechLocale: 'kn-IN' },
   { name: 'Malayalam', nativeName: 'മലയാളം', speechLocale: 'ml-IN' },
   { name: 'Bengali', nativeName: 'বাংলা', speechLocale: 'bn-IN' },
+  { name: 'Telugu', nativeName: 'తెలుగు', speechLocale: 'te-IN' },
+  { name: 'Gujarati', nativeName: 'ગુજરાતી', speechLocale: 'gu-IN' },
 ]
 
 const english = {
