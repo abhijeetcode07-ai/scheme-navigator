@@ -2,6 +2,7 @@ import { supabaseRest } from './_lib/supabase-admin.js'
 
 const ALLOWED_HOSTS = new Set([
   'pib.gov.in',
+  'www.pib.gov.in',
   'india.gov.in',
   'mygov.in',
   'government.economictimes.indiatimes.com',
@@ -71,6 +72,9 @@ function parseIsoDate(dateString) {
 }
 
 function parseFeed(xml, sourceName, sourceType) {
+  // Some government feeds include a UTF-8 BOM and omit optional RSS dates.
+  // Titles and canonical links are still valid records, so do not discard them.
+  xml = String(xml || '').replace(/^\uFEFF/, '')
   const rssItems = [...xml.matchAll(/<item(?:\s[^>]*)?>([\s\S]*?)<\/item>/gi)].map((match) => match[1])
   const atomItems = [...xml.matchAll(/<entry(?:\s[^>]*)?>([\s\S]*?)<\/entry>/gi)].map((match) => match[1])
   const blocks = rssItems.length ? rssItems : atomItems
@@ -99,14 +103,14 @@ function parseFeed(xml, sourceName, sourceType) {
       fetched_at: new Date().toISOString(),
       status: 'published',
     }
-  }).filter((item) => item.title && item.source_url && item.source_name && item.source_type)
+  }).filter((item) => {
+    if (!item.title || !item.source_url || !item.source_name || !item.source_type) return false
+    try { return isHostAllowed(new URL(item.source_url).hostname) } catch { return false }
+  })
 }
 
 function configuredFeeds() {
-  const defaults = [
-    'https://pib.gov.in/RssMain.aspx?ModId=6&Lang=1&Regid=1',
-    'https://government.economictimes.indiatimes.com/rss/education',
-  ]
+  const defaults = KNOWN_FEEDS.map((feed) => feed.url)
   const rawList = String(process.env.NEWS_FEED_URLS || defaults.join(','))
     .split(',')
     .map((v) => v.trim())
@@ -127,7 +131,7 @@ function configuredFeeds() {
       }
       const host = parsed.hostname.toLowerCase()
       const isGov = host.endsWith('.gov.in') || host.endsWith('.nic.in')
-      const isPib = host.includes('pib.gov.in')
+      const isPib = host === 'pib.gov.in' || host === 'www.pib.gov.in'
       const isEt = host.includes('economictimes.indiatimes.com')
       const isMinistry = isGov && !isPib && host !== 'india.gov.in' && host !== 'mygov.in'
 
@@ -157,7 +161,7 @@ async function fetchFeedWithTimeout(url, timeoutMs = 10000) {
     const response = await fetch(url, {
       signal: controller.signal,
       headers: {
-        'User-Agent': 'SchemeSetu/1.0 feed reader (+https://schemesetu.gov.in)',
+        'User-Agent': 'Mozilla/5.0 (compatible; SchemeSetuLiveFeed/1.0)',
         Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
       },
     })
@@ -167,8 +171,61 @@ async function fetchFeedWithTimeout(url, timeoutMs = 10000) {
   }
 }
 
+async function refreshFeeds() {
+  const feeds = configuredFeeds()
+  if (!feeds.length) {
+    const error = new Error('Set NEWS_FEED_URLS before refreshing the feed.')
+    error.code = 'no_feeds_configured'
+    throw error
+  }
+
+  const allItems = []
+  const sourceReports = []
+
+  for (const feed of feeds) {
+    try {
+      const upstream = await fetchFeedWithTimeout(feed.url, 10000)
+      if (!upstream.ok) {
+        sourceReports.push({ name: feed.sourceName, type: feed.sourceType, url: feed.url, items: 0, error: `HTTP ${upstream.status} ${upstream.statusText}` })
+        continue
+      }
+      const xml = await upstream.text()
+      const parsed = parseFeed(xml, feed.sourceName, feed.sourceType)
+      allItems.push(...parsed)
+      sourceReports.push({ name: feed.sourceName, type: feed.sourceType, url: feed.url, items: parsed.length, error: null })
+    } catch (err) {
+      sourceReports.push({ name: feed.sourceName, type: feed.sourceType, url: feed.url, items: 0, error: err.name === 'AbortError' ? 'Request timed out' : err.message })
+    }
+  }
+
+  const uniqueItems = [...new Map(allItems.map((item) => [item.source_url, item])).values()].slice(0, 100)
+  if (uniqueItems.length) {
+    await supabaseRest('feed_items?on_conflict=source_url', {
+      method: 'POST',
+      headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify(uniqueItems),
+    })
+  }
+  return { refreshed: uniqueItems.length, totalFetched: allItems.length, sources: sourceReports, timestamp: new Date().toISOString() }
+}
+
 export default async function handler(request, response) {
   if (request.method === 'GET') {
+    // Vercel Cron invokes functions with GET. Refresh only when the request is
+    // authenticated as cron; public GET remains a read-only feed request.
+    const cronRequest =
+      (process.env.CRON_SECRET && request.headers.authorization === `Bearer ${process.env.CRON_SECRET}`) ||
+      String(request.headers['user-agent'] || '').toLowerCase().startsWith('vercel-cron')
+    if (cronRequest && request.query.refresh !== 'false') {
+      try {
+        const result = await refreshFeeds()
+        response.status(200).json({ ok: true, ...result })
+      } catch (error) {
+        response.status(500).json({ code: error.code || 'feed_refresh_failed', message: error.message })
+      }
+      return
+    }
+
     const limit = Math.min(50, Math.max(1, Number.parseInt(request.query.limit || '24', 10) || 24))
     const query = new URLSearchParams({
       select: 'id,title,summary,source_name,source_url,source_type,published_at,fetched_at,image_url,tags',
@@ -232,59 +289,11 @@ export default async function handler(request, response) {
     return
   }
 
-  const allItems = []
-  const sourceReports = []
-
-  for (const feed of feeds) {
-    try {
-      const upstream = await fetchFeedWithTimeout(feed.url, 10000)
-      if (!upstream.ok) {
-        sourceReports.push({
-          name: feed.sourceName,
-          type: feed.sourceType,
-          url: feed.url,
-          items: 0,
-          error: `HTTP ${upstream.status} ${upstream.statusText}`,
-        })
-        continue
-      }
-      const xml = await upstream.text()
-      const parsed = parseFeed(xml, feed.sourceName, feed.sourceType)
-      allItems.push(...parsed)
-      sourceReports.push({
-        name: feed.sourceName,
-        type: feed.sourceType,
-        url: feed.url,
-        items: parsed.length,
-        error: null,
-      })
-    } catch (err) {
-      sourceReports.push({
-        name: feed.sourceName,
-        type: feed.sourceType,
-        url: feed.url,
-        items: 0,
-        error: err.name === 'AbortError' ? 'Request timed out' : err.message,
-      })
-    }
-  }
-
   try {
-    const uniqueItems = [...new Map(allItems.map((item) => [item.source_url, item])).values()].slice(0, 100)
-    if (uniqueItems.length) {
-      await supabaseRest('feed_items?on_conflict=source_url', {
-        method: 'POST',
-        headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
-        body: JSON.stringify(uniqueItems),
-      })
-    }
-    response.status(200).json({
-      refreshed: uniqueItems.length,
-      totalFetched: allItems.length,
-      sources: sourceReports,
-      timestamp: new Date().toISOString(),
-    })
+    const result = await refreshFeeds()
+    response.status(200).json(result)
   } catch (error) {
-    response.status(500).json({ code: 'feed_refresh_failed', message: error.message, sources: sourceReports })
+    response.status(500).json({ code: error.code || 'feed_refresh_failed', message: error.message })
   }
+  return
 }

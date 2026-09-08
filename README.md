@@ -93,7 +93,7 @@ Users can sign in with Google or email (via Supabase Auth) to save their scheme 
 
 ### Latest Updates feed
 
-A dedicated "Latest Updates" page and a homepage feed section surface recent, source-attributed scheme announcements — each entry displays its origin (official/ministry source vs. reputable news) and links back to that source. The underlying data model and API route are already built; wiring this up to a live, continuously-updated feed of verified central-government and official news sources is in progress — see [Roadmap](#roadmap).
+A dedicated "Latest Updates" page and a homepage feed section surface recent, source-attributed scheme announcements — each entry displays its origin (official/ministry source vs. reputable news) and links back to that source. The Vercel cron refreshes the feed through `GET /api/feed`, while ordinary public `GET` requests remain read-only. The current allowlist accepts PIB and other `*.gov.in`/`*.nic.in` sources plus ETGovernment; article links are validated against the same allowlist before storage. Refresh failures are reported per source rather than being silently presented as an empty feed.
 
 ### Full scheme catalogue
 
@@ -233,6 +233,10 @@ VITE_SUPABASE_PUBLISHABLE_KEY=your-supabase-anon-key
 ```
 
 Set the Gemini key as a server-side environment variable on your deployment platform (Vercel) — never exposed to the client.
+
+For the live feed, set `SUPABASE_SERVICE_ROLE_KEY` on Vercel so the serverless refresh function can write to `feed_items`. Set `CRON_SECRET` as well; Vercel sends it as a bearer token on cron requests, and the API also recognizes Vercel's cron user-agent. Optional `NEWS_FEED_URLS` can override the built-in allowlisted sources, but every host is checked before it is fetched and every article URL is checked before it is stored. Manual refreshes require `FEED_REFRESH_SECRET` in the `x-feed-refresh-secret` header.
+
+The built-in sources are the Press Information Bureau RSS feeds and ETGovernment's education RSS feed. These are deliberately narrow rather than using an unrestricted news aggregator, so the feed cannot silently mix in unverified blogs, scraped social posts, or anonymous sources.
 
 ### Install & Run
 
