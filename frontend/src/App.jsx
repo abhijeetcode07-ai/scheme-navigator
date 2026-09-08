@@ -32,7 +32,7 @@ function languageStatus(kind, language, mode = 'results') {
 
 function App() {
   const [screen, setScreen] = useState('landing')
-  const [language, setLanguage] = useState('English')
+  const [language, setLanguage] = useState(() => { try { return localStorage.getItem('schemesetu-language') || 'English' } catch { return 'English' } })
   const [answers, setAnswers] = useState(null)
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [matches, setMatches] = useState(null)
@@ -51,7 +51,12 @@ function App() {
     return () => data.subscription.unsubscribe()
   }, [])
 
-  const updateLanguage = (nextLanguage) => setLanguage(getLanguage(nextLanguage).name)
+  const updateLanguage = (nextLanguage) => {
+    const next = getLanguage(nextLanguage).name
+    setLanguage(next)
+    try { localStorage.setItem('schemesetu-language', next) } catch { /* storage may be unavailable */ }
+    setAnswers((current) => current ? { ...current, language: next } : current)
+  }
   const renderAccountPanel = useCallback(() => <AuthPanel user={user} onAuthChange={setUser} />, [user])
   const renderSetuSathi = useCallback(() => <SetuSathi language={language} user={user} answers={answers || {}} schemes={catalogSchemes.length ? catalogSchemes : (matches || [])} />, [language, user, answers, matches, catalogSchemes])
 
