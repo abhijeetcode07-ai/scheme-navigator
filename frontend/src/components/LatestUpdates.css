@@ -455,3 +455,8 @@
     flex-shrink: 0;
   }
 }
+
+/* Nine SchemeSetu support-route filters */
+.category-filter-tabs{padding-top:4px;border-top:1px solid rgba(251,247,239,.1)}
+.update-card-route{margin:-6px 0 12px;color:rgba(94,234,212,.86);font-size:.62rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+@media(max-width:600px){.category-filter-tabs{margin-top:2px}}
